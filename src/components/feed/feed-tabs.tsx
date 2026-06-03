@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils/cn";
 
 const TABS: { id: FeedTab; label: string }[] = [
   { id: "for-you", label: "For You" },
+  { id: "circle", label: "Circle" },
   { id: "needs", label: "Needs" },
   { id: "offers", label: "Offers" },
   { id: "recos", label: "Recos" },
@@ -19,22 +20,27 @@ interface FeedTabsProps {
 
 export function FeedTabs({ active, onChange }: FeedTabsProps) {
   return (
-    <div className="flex gap-1 overflow-x-auto px-4 pb-2 scrollbar-hide">
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={cn(
-            "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
-            active === tab.id
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-          )}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div className="mx-auto max-w-lg border-b border-[var(--border)] bg-white">
+      <div className="flex overflow-x-auto scrollbar-hide">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={cn(
+              "relative shrink-0 px-4 py-3 text-sm font-semibold transition-colors",
+              active === tab.id
+                ? "text-emerald-700"
+                : "text-slate-500 hover:bg-emerald-50/50 hover:text-slate-700",
+            )}
+          >
+            {tab.label}
+            {active === tab.id && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-emerald-600" />
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

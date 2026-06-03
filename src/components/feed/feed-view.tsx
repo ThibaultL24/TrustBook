@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { FeedTab } from "@/lib/types";
+import type { ComposerMode } from "@/lib/posts/composer-modes";
 import { useTrustbook } from "@/providers/trustbook-provider";
 import { useMockSession } from "@/providers/mock-session-provider";
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
@@ -12,18 +13,23 @@ import {
   DemoTour,
   shouldAutoOpenDemoTour,
 } from "@/components/demo/demo-tour";
+import { AppTopBar } from "@/components/layout/app-top-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { NotificationsSheet } from "@/components/layout/notifications-sheet";
 import { JudgingBanner } from "@/components/layout/judging-banner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FeedHeader } from "./feed-header";
+import { StoriesStrip } from "./stories-strip";
+import { PostComposer } from "./post-composer";
 import { FeedTabs } from "./feed-tabs";
 import { CommunityFilter } from "./community-filter";
+import { ShareStoryModal } from "./share-story-modal";
+import { StoryViewer } from "./story-viewer";
 import { PostCard } from "@/components/posts/post-card";
 import { TrustConfirmModal } from "@/components/trust/trust-confirm-modal";
 import { CreatePostModal } from "@/components/posts/create-post-modal";
 import { PostFocusModal } from "@/components/posts/post-focus-modal";
 import { ToastStack } from "@/components/ui/toast-stack";
-import { Plus, Inbox } from "lucide-react";
+import { Inbox, Users } from "lucide-react";
 
 function getInitialTourOpen(): boolean {
   if (typeof window === "undefined") return false;
@@ -42,18 +48,35 @@ export function FeedView() {
     setFocusedPostId,
     getUser,
     posts,
+    viewer,
+    storyGroups,
   } = useTrustbook();
 
   const [tab, setTab] = useState<FeedTab>("for-you");
   const [trustTarget, setTrustTarget] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [composerMode, setComposerMode] = useState<ComposerMode>("standard");
+  const [showShareStory, setShowShareStory] = useState(false);
+  const [activeStoryAuthor, setActiveStoryAuthor] = useState<string | null>(
+    null,
+  );
   const [showTour, setShowTour] = useState(getInitialTourOpen);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
   const dataRaw = searchParams.get("data");
   const deepLinkParse = dataRaw ? parseDeepLinkDataSafe(dataRaw) : null;
   const deepLinkError =
     deepLinkParse && !deepLinkParse.ok ? deepLinkParse.error : null;
+
+  const activeStoryGroup = activeStoryAuthor
+    ? storyGroups.find((g) => g.authorAddress === activeStoryAuthor)
+    : null;
+
+  function openCreate(mode: ComposerMode = "standard") {
+    setComposerMode(mode);
+    setShowCreate(true);
+  }
 
   function openDemoTour() {
     setTourKey((k) => k + 1);
@@ -64,9 +87,11 @@ export function FeedView() {
     const postId = searchParams.get("postId");
     const communityId = searchParams.get("communityId");
     const raw = searchParams.get("data");
+    const create = searchParams.get("create");
 
     if (communityId) setCommunityFilter(communityId);
     if (postId) setFocusedPostId(postId);
+    if (create === "1") openCreate("standard");
 
     if (raw) {
       const parsed = parseDeepLinkDataSafe(raw);
@@ -94,52 +119,71 @@ export function FeedView() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24">
+    <div className="min-h-screen bg-[var(--background)] pb-24">
       <JudgingBanner onOpenDemoTour={openDemoTour} />
-      <FeedHeader onOpenDemoTour={openDemoTour} />
+      <AppTopBar onNotificationsClick={() => setShowNotifications(true)} />
 
       {isGuest && (
-        <div className="mx-auto max-w-lg px-4 pb-2">
-          <div className="flex flex-col gap-2 rounded-xl border border-teal-100 bg-teal-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-teal-900">
-              Browsing as guest — connect to tip, boost, or trust on Gnosis.
+        <div className="mx-auto max-w-lg px-3 py-2">
+          <div className="flex flex-col gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-600">
+              Browsing as guest · connect to tip & trust on Gnosis
             </p>
-            <ConnectWalletButton
-              className="sm:max-w-[200px]"
-              variant="outline"
-            />
+            <ConnectWalletButton className="sm:max-w-[180px]" variant="outline" />
           </div>
         </div>
       )}
 
       {usesLiveWallet && (
-        <div className="mx-auto max-w-lg px-4 pb-2">
-          <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-center text-[10px] text-emerald-800">
-            Connected to Circles — CRC actions are on-chain.
+        <div className="mx-auto max-w-lg px-3 pb-1">
+          <p className="rounded-lg bg-emerald-600 px-3 py-1.5 text-center text-[11px] font-medium text-white">
+            Connected · {viewer.crcBalance ?? 0} CRC available
           </p>
         </div>
       )}
 
+      <div className="mx-auto max-w-lg space-y-2 py-2">
+        <StoriesStrip
+          onOpenOwnStoryPicker={() => setShowShareStory(true)}
+          onOpenStory={setActiveStoryAuthor}
+        />
+        <PostComposer onOpenCreate={openCreate} />
+      </div>
+
       <FeedTabs active={tab} onChange={setTab} />
-      <CommunityFilter
-        value={communityFilter}
-        onChange={setCommunityFilter}
-      />
+
+      {tab === "circle" && (
+        <div className="mx-auto max-w-lg px-3 py-1">
+          <p className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-100">
+            <Users className="h-3.5 w-3.5 shrink-0" />
+            Posts from people in your trust circle — mutual trust, direct trust,
+            and shared paths.
+          </p>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-lg px-3 py-2">
+        <CommunityFilter value={communityFilter} onChange={setCommunityFilter} />
+      </div>
 
       {deepLinkError && (
-        <div className="mx-auto max-w-lg px-4 pb-2">
+        <div className="mx-auto max-w-lg px-3 pb-2">
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
             Deep link error: {deepLinkError}
           </p>
         </div>
       )}
 
-      <main className="mx-auto max-w-lg space-y-4 px-4 pb-4">
+      <main className="mx-auto max-w-lg space-y-2 px-0 pb-4 sm:px-3">
         {ranked.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title="No posts here yet"
-            description="Try another filter or create a post for your communities."
+            title={tab === "circle" ? "No posts from your circle yet" : "No posts here yet"}
+            description={
+              tab === "circle"
+                ? "Trust more authors on Circles to grow your circle feed."
+                : "Try another filter or create a post for your communities."
+            }
           />
         ) : (
           ranked.map((r) => (
@@ -152,15 +196,6 @@ export function FeedView() {
         )}
       </main>
 
-      <button
-        type="button"
-        onClick={() => setShowCreate(true)}
-        className="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg hover:bg-slate-800"
-        aria-label="Create post"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
       {trustTarget && (
         <TrustConfirmModal
           address={trustTarget}
@@ -169,7 +204,23 @@ export function FeedView() {
         />
       )}
 
-      {showCreate && <CreatePostModal onClose={() => setShowCreate(false)} />}
+      {showCreate && (
+        <CreatePostModal
+          mode={composerMode}
+          onClose={() => setShowCreate(false)}
+        />
+      )}
+
+      {showShareStory && (
+        <ShareStoryModal onClose={() => setShowShareStory(false)} />
+      )}
+
+      {activeStoryGroup && (
+        <StoryViewer
+          group={activeStoryGroup}
+          onClose={() => setActiveStoryAuthor(null)}
+        />
+      )}
 
       {focusedPost && (
         <PostFocusModal
@@ -178,9 +229,14 @@ export function FeedView() {
         />
       )}
 
+      <NotificationsSheet
+        open={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+
       <DemoTour key={tourKey} open={showTour} onClose={() => setShowTour(false)} />
       <ToastStack />
-      <BottomNav />
+      <BottomNav onCreateClick={() => openCreate("standard")} />
     </div>
   );
 }

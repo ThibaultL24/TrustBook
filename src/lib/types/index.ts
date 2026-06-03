@@ -2,6 +2,8 @@
 
 export type PostType = "recommendation" | "offer" | "need" | "event";
 
+export type PostFormat = "standard" | "live" | "photo" | "mood";
+
 export type CommunityCategory =
   | "local"
   | "dev"
@@ -47,6 +49,10 @@ export interface Post {
   tipCount: number;
   tags: string[];
   targetUrl?: string;
+  format?: PostFormat;
+  imageUrl?: string;
+  mood?: string;
+  isLive?: boolean;
 }
 
 export interface FeedExplanation {
@@ -73,7 +79,7 @@ export interface RankedPost {
   scoreBreakdown: FeedScoreBreakdown;
 }
 
-export type FeedTab = "for-you" | "needs" | "offers" | "recos" | "events";
+export type FeedTab = "for-you" | "circle" | "needs" | "offers" | "recos" | "events";
 
 export interface TrustEdge {
   from: string;
@@ -84,4 +90,20 @@ export interface DeepLinkData {
   postId?: string;
   communityId?: string;
   action?: string;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  authorAddress: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface Story {
+  id: string;
+  postId: string;
+  authorAddress: string;
+  createdAt: string;
+  expiresAt: string;
 }

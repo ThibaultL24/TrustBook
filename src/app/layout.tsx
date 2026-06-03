@@ -48,7 +48,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0f766e",
+  themeColor: "#059669",
 };
 
 export default function RootLayout({
@@ -63,7 +63,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className="min-h-full bg-slate-50 font-sans text-slate-900 pb-safe"
+        className="min-h-full bg-[var(--background)] font-sans text-slate-900 pb-safe"
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>

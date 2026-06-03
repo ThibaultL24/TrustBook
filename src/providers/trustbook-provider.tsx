@@ -35,15 +35,22 @@ import { syncTrustEdgesForViewer } from "@/lib/circles/sync-trust-edges";
 import { resetDemoTour } from "@/components/demo/demo-tour";
 import { setIntuitionMockMode } from "@/lib/intuition/adapter";
 import { SEED_POSTS } from "@/lib/mock/posts";
+import { SEED_COMMENTS } from "@/lib/mock/comments";
 import { MOCK_TRUST_EDGES, VIEWER_TRUSTS } from "@/lib/mock/trust-edges";
 import { getMockUsers, VIEWER_PROFILE } from "@/lib/mock/users";
 import { rankFeed, filterByTab } from "@/lib/ranking/feed-ranking";
+import { buildSeedStories, buildStoryGroups, storyExpiresAt } from "@/lib/stories/helpers";
+import type { StoryGroup } from "@/lib/stories/helpers";
+import { getTrustCircleAddresses } from "@/lib/trust/trust-circle";
 import type {
   FeedTab,
   Post,
+  PostFormat,
   PostType,
   RankedPost,
   UserProfile,
+  Comment,
+  Story,
 } from "@/lib/types";
 import { VIEWER_ADDRESS } from "@/lib/mock/addresses";
 import type { TrustEdge } from "@/lib/types";
@@ -63,6 +70,11 @@ interface CreatePostInput {
   body: string;
   amountRequested?: number;
   tags: string[];
+  format?: PostFormat;
+  imageUrl?: string;
+  mood?: string;
+  isLive?: boolean;
+  shareToStory?: boolean;
 }
 
 interface TrustbookContextValue {
@@ -92,6 +104,13 @@ interface TrustbookContextValue {
   communityFilter: string | null;
   setCommunityFilter: (id: string | null) => void;
   resetDemoState: () => void;
+  getCommentsForPost: (postId: string) => Comment[];
+  addComment: (postId: string, body: string) => void;
+  stories: Story[];
+  storyGroups: StoryGroup[];
+  sharePostToStory: (postId: string) => void;
+  markStoryGroupViewed: (authorAddress: string) => void;
+  getPostById: (postId: string) => Post | undefined;
 }
 
 const TrustbookContext = createContext<TrustbookContextValue | null>(null);
@@ -129,6 +148,14 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
   );
   const [focusedPostId, setFocusedPostId] = useState<string | null>(null);
   const [communityFilter, setCommunityFilter] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>(SEED_COMMENTS);
+  const [stories, setStories] = useState<Story[]>(() =>
+    buildSeedStories(
+      SEED_POSTS,
+      getTrustCircleAddresses(VIEWER_ADDRESS, MOCK_TRUST_EDGES),
+    ),
+  );
+  const [viewedStoryIds, setViewedStoryIds] = useState<Set<string>>(new Set());
 
   const canSignActions = usesLiveWallet && !isReadonlyMode;
 
@@ -323,12 +350,30 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
 
   const getRankedForTab = useCallback(
     (tab: FeedTab, communityId?: string | null) => {
-      let filtered = filterByTab(rankedFeed, tab);
+      let filtered = filterByTab(rankedFeed, tab, viewerAddress, trustEdges);
       const cid = communityId ?? communityFilter;
       if (cid) filtered = filtered.filter((r) => r.post.communityId === cid);
       return filtered;
     },
-    [rankedFeed, communityFilter],
+    [rankedFeed, communityFilter, viewerAddress, trustEdges],
+  );
+
+  const getPostById = useCallback(
+    (postId: string) => posts.find((p) => p.id === postId),
+    [posts],
+  );
+
+  const storyGroups = useMemo(
+    () =>
+      buildStoryGroups(
+        stories,
+        viewerAddress,
+        trustEdges,
+        getUser,
+        getPostById,
+        viewedStoryIds,
+      ),
+    [stories, viewerAddress, trustEdges, getUser, getPostById, viewedStoryIds],
   );
 
   const updatePost = useCallback((postId: string, patch: Partial<Post>) => {
@@ -497,6 +542,7 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
 
   const createPost = useCallback(
     (input: CreatePostInput): Post => {
+      const format = input.format ?? "standard";
       const post: Post = {
         id: `post-${crypto.randomUUID().slice(0, 8)}`,
         authorAddress: viewer.address,
@@ -509,18 +555,89 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
         amountBoosted: 0,
         tipCount: 0,
         tags: input.tags,
+        format,
+        imageUrl: input.imageUrl,
+        mood: input.mood,
+        isLive: input.isLive ?? format === "live",
       };
       setPosts((prev) => [post, ...prev]);
-      showActionToast("Post published to your communities");
+
+      if (input.shareToStory) {
+        const createdAt = post.createdAt;
+        setStories((prev) => [
+          ...prev,
+          {
+            id: `story-${crypto.randomUUID().slice(0, 8)}`,
+            postId: post.id,
+            authorAddress: viewer.address,
+            createdAt,
+            expiresAt: storyExpiresAt(createdAt),
+          },
+        ]);
+      }
+
+      showActionToast(
+        input.isLive
+          ? "You are live — your trust circle was notified"
+          : "Post published to your communities",
+      );
       return post;
     },
     [viewer.address, showActionToast],
+  );
+
+  const sharePostToStory = useCallback(
+    (postId: string) => {
+      const post = posts.find((p) => p.id === postId);
+      if (!post || post.authorAddress !== viewerAddress) {
+        showActionToast("You can only share your own posts to stories", "info");
+        return;
+      }
+
+      const createdAt = new Date().toISOString();
+      setStories((prev) => [
+        ...prev.filter(
+          (s) => !(s.authorAddress === viewerAddress && s.postId === postId),
+        ),
+        {
+          id: `story-${crypto.randomUUID().slice(0, 8)}`,
+          postId,
+          authorAddress: viewerAddress,
+          createdAt,
+          expiresAt: storyExpiresAt(createdAt),
+        },
+      ]);
+      showActionToast("Added to your story for 24h", "success");
+    },
+    [posts, viewerAddress, showActionToast],
+  );
+
+  const markStoryGroupViewed = useCallback(
+    (authorAddress: string) => {
+      const ids = stories
+        .filter((s) => s.authorAddress === authorAddress)
+        .map((s) => s.id);
+      setViewedStoryIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.add(id);
+        return next;
+      });
+    },
+    [stories],
   );
 
   const resetDemoState = useCallback(() => {
     setPosts([...SEED_POSTS]);
     setTrustEdges([...MOCK_TRUST_EDGES]);
     setViewerTrusts([...VIEWER_TRUSTS]);
+    setComments([...SEED_COMMENTS]);
+    setStories(
+      buildSeedStories(
+        SEED_POSTS,
+        getTrustCircleAddresses(VIEWER_ADDRESS, MOCK_TRUST_EDGES),
+      ),
+    );
+    setViewedStoryIds(new Set());
     setCommunityFilter(null);
     setFocusedPostId(null);
     setPendingActions({});
@@ -529,6 +646,32 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     resetDemoTour();
     showActionToast("Demo state reset", "info");
   }, [showActionToast]);
+
+  const getCommentsForPost = useCallback(
+    (postId: string) =>
+      comments
+        .filter((c) => c.postId === postId)
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        ),
+    [comments],
+  );
+
+  const addComment = useCallback(
+    (postId: string, body: string) => {
+      const comment: Comment = {
+        id: `c-${crypto.randomUUID()}`,
+        postId,
+        authorAddress: viewerAddress,
+        body,
+        createdAt: new Date().toISOString(),
+      };
+      setComments((prev) => [...prev, comment]);
+      showActionToast("Comment posted", "success");
+    },
+    [viewerAddress, showActionToast],
+  );
 
   const value: TrustbookContextValue = {
     viewer,
@@ -558,6 +701,13 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     communityFilter,
     setCommunityFilter,
     resetDemoState,
+    getCommentsForPost,
+    addComment,
+    stories,
+    storyGroups,
+    sharePostToStory,
+    markStoryGroupViewed,
+    getPostById,
   };
 
   return (

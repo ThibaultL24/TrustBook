@@ -3,6 +3,7 @@
 import type {
   FeedExplanation,
   FeedScoreBreakdown,
+  FeedTab,
   Post,
   RankedPost,
   TrustEdge,
@@ -19,6 +20,10 @@ import {
 } from "@/lib/mock/trust-edges";
 import { COMMUNITY_MAP } from "@/lib/mock/communities";
 import { DEMO_REFERENCE_TIME } from "@/lib/mock/demo-time";
+import {
+  getTrustCirclePriority,
+  isInTrustCircle,
+} from "@/lib/trust/trust-circle";
 
 export const WEIGHTS = {
   directTrust: 100,
@@ -258,13 +263,32 @@ export function rankFeed(
         edges,
       ),
     )
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      const liveDiff =
+        (b.post.isLive || b.post.format === "live" ? 50 : 0) -
+        (a.post.isLive || a.post.format === "live" ? 50 : 0);
+      if (liveDiff !== 0) return liveDiff;
+
+      const priorityDiff =
+        getTrustCirclePriority(viewerAddress, b.post.authorAddress, edges ?? []) -
+        getTrustCirclePriority(viewerAddress, a.post.authorAddress, edges ?? []);
+      if (priorityDiff !== 0) return priorityDiff;
+      return b.score - a.score;
+    });
 }
 
 export function filterByTab(
   ranked: RankedPost[],
-  tab: "for-you" | "needs" | "offers" | "recos" | "events",
+  tab: FeedTab,
+  viewerAddress?: string,
+  edges?: TrustEdge[],
 ): RankedPost[] {
+  if (tab === "circle") {
+    if (!viewerAddress || !edges) return ranked;
+    return ranked.filter((r) =>
+      isInTrustCircle(viewerAddress, r.post.authorAddress, edges),
+    );
+  }
   if (tab === "for-you") return ranked;
   const typeMap = {
     needs: "need",

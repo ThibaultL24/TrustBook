@@ -12,7 +12,7 @@ interface ShareButtonProps {
   input: SharePostInput;
   label?: string;
   className?: string;
-  variant?: "icon" | "button";
+  variant?: "icon" | "button" | "action";
 }
 
 export function ShareButton({
@@ -35,6 +35,23 @@ export function ShareButton({
     } finally {
       setPending(false);
     }
+  }
+
+  if (variant === "action") {
+    return (
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={pending}
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold text-slate-600 hover:bg-[var(--surface-muted)] disabled:opacity-50",
+          className,
+        )}
+      >
+        <Share2 className="h-4 w-4" />
+        {pending ? "…" : label}
+      </button>
+    );
   }
 
   if (variant === "icon") {
