@@ -1,0 +1,34 @@
+// public/trustbook-miniapp.config.json
+{
+  "$schema": "provisional",
+  "_docs": "Provisional Trustbook mini-app manifest. Align with https://miniapps.aboutcircles.com/developers and https://github.com/aboutcircles/CirclesMiniapps before store submission.",
+  "name": "Trustbook",
+  "slug": "trustbook",
+  "description": "A Circles-native feed where content discovery is ranked by explicit trust and backed by CRC actions.",
+  "version": "0.1.0",
+  "appUrl": "https://trustbook.vercel.app",
+  "icon": "/icon.svg",
+  "routes": ["/", "/feed", "/pitch", "/leaderboard", "/demo", "/status"],
+  "deepLinks": [
+    { "pattern": "/feed?postId={postId}", "description": "Open focused post" },
+    { "pattern": "/feed?communityId={communityId}", "description": "Filter by community" },
+    { "pattern": "/profile/{address}", "description": "Open profile" }
+  ],
+  "capabilities": [
+    "readCurrentUser",
+    "requestCrcPayment",
+    "requestTrustAction",
+    "share",
+    "openExternal"
+  ],
+  "integration": {
+    "hostedMiniApp": true,
+    "hostGlobals": ["window.circlesMiniApp", "window.gnosisMiniApp"],
+    "sdkPackage": "@aboutcircles/sdk",
+    "references": [
+      "https://miniapps.aboutcircles.com/developers",
+      "https://github.com/aboutcircles/CirclesMiniapps",
+      "https://docs.aboutcircles.com/user-guides/build-a-no-code-mini-app-on-circles-using-the-gnosis-app-checkout-flow"
+    ]
+  }
+}
