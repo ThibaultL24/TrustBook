@@ -143,3 +143,4 @@ See `/status` in-app or `src/lib/status/integration-status.ts`
 | `npm run build` | Production build |
 | `npm test` | Unit tests |
 | `npm run lint` | ESLint |
+# TrustBook
