@@ -25,6 +25,7 @@ export interface UserProfile {
   mutualTrustCount: number;
   groups: string[];
   crcBalance?: number;
+  coverUrl?: string;
 }
 
 export interface Community {

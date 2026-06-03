@@ -172,22 +172,26 @@ export function MockSessionProvider({ children }: { children: ReactNode }) {
         }
 
         const avatar = computeCirclesAvatarAddress(address as Address);
+        if (!cancelled) setWagmiAvatar(avatar);
+
         await initCirclesSession(address as Address, eip1193);
         resetCirclesAdapter();
-
-        if (!cancelled) setWagmiAvatar(avatar);
       } catch (err) {
         clearCirclesSession();
         resetCirclesAdapter();
         if (!cancelled) {
           const message =
             err instanceof Error ? err.message : "Failed to connect Circles";
+          const isSafeNetwork = /safeproxy|not deployed on the current network/i.test(
+            message,
+          );
           setWalletError(
             /not found|avatarnotfound/i.test(message)
               ? "Circles avatar not registered — register on Circles first."
-              : message,
+              : isSafeNetwork
+                ? "Switch MetaMask to Gnosis Chain (100). Trust graph still loads in read-only mode."
+                : message,
           );
-          setWagmiAvatar(null);
         }
       } finally {
         if (!cancelled) setIsWalletConnecting(false);

@@ -4,176 +4,105 @@
 import { useState } from "react";
 import type { UserProfile } from "@/lib/types";
 import { useTrustbook } from "@/providers/trustbook-provider";
-import { COMMUNITY_MAP } from "@/lib/mock/communities";
-import { Avatar } from "@/components/ui/avatar";
-import { ShareButton } from "@/components/ui/share-button";
-import { TrustRelationDisplay } from "./trust-relation-display";
-import { TrustPathDisplay } from "@/components/trust/trust-path-display";
-import { findTrustPath } from "@/lib/trust/trust-paths";
+import { applyProfileMediaToUser } from "@/lib/profile/profile-media-store";
 import { PostCard } from "@/components/posts/post-card";
 import { TrustConfirmModal } from "@/components/trust/trust-confirm-modal";
 import { rankPost } from "@/lib/ranking/feed-ranking";
-import Link from "next/link";
-import { ArrowLeft, HeartHandshake, Users } from "lucide-react";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ProfileCoverHeader } from "./profile-cover-header";
+import { ProfileTabs, type ProfileTab } from "./profile-tabs";
+import { ProfileAboutSection } from "./profile-about-section";
+import { ProfileTrustSection } from "./profile-trust-section";
+import { EditProfileModal } from "./edit-profile-modal";
+import { FileText } from "lucide-react";
 
 interface ProfileViewProps {
   profile: UserProfile;
 }
 
-export function ProfileView({ profile }: ProfileViewProps) {
+export function ProfileView({ profile: profileProp }: ProfileViewProps) {
   const {
     viewer,
     trustEdges,
     getPostsByAuthor,
     getUser,
+    getProfileMedia,
     canSignActions,
     isActionPending,
   } = useTrustbook();
+
+  const profile =
+    getUser(profileProp.address) ??
+    applyProfileMediaToUser(profileProp, {
+      [profileProp.address.trim().toLowerCase()]: getProfileMedia(
+        profileProp.address,
+      ),
+    });
+
+  const [tab, setTab] = useState<ProfileTab>("posts");
   const [trustOpen, setTrustOpen] = useState(false);
-  const authorPosts = getPostsByAuthor(profile.address).slice(0, 5);
+  const [editOpen, setEditOpen] = useState(false);
 
-  const sharedCommunities = profile.groups.filter((g) =>
-    viewer.groups.includes(g),
-  );
-
-  const trustLabel = profile.trustedByViewer
-    ? "Trusted"
-    : profile.trustsViewer
-      ? "Trust back"
-      : "Trust";
-
+  const authorPosts = getPostsByAuthor(profile.address);
+  const isOwnProfile =
+    profile.address.toLowerCase() === viewer.address.toLowerCase();
   const trustPending = isActionPending(`trust:${profile.address}`);
 
-  const trustPath =
-    profile.address !== viewer.address
-      ? findTrustPath(
-          viewer.address,
-          profile.address,
-          trustEdges,
-          (addr) => getUser(addr)?.displayName ?? addr.slice(0, 8),
-        )
-      : null;
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-12">
-      <div className="mx-auto max-w-lg px-4 pt-4">
-        <Link
-          href="/feed"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to feed
-        </Link>
+    <div className="min-h-screen bg-[var(--background)] pb-24">
+      <div className="mx-auto max-w-lg">
+        <ProfileCoverHeader
+          profile={profile}
+          postCount={authorPosts.length}
+          isOwnProfile={isOwnProfile}
+          onTrustClick={() => setTrustOpen(true)}
+          onEditClick={() => setEditOpen(true)}
+          trustPending={trustPending}
+          canTrust={canSignActions}
+        />
 
-        <div className="mb-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <Avatar
-                src={profile.avatarUrl}
-                alt={profile.displayName}
-                size="lg"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  {profile.displayName}
-                </h1>
-                <p className="font-mono text-xs text-slate-400">
-                  {profile.address.slice(0, 10)}…
-                </p>
-                {profile.trustLevel && (
-                  <span className="mt-1 inline-block text-xs text-teal-700">
-                    {profile.trustLevel}
-                    {profile.trustScore != null && ` · ${profile.trustScore}`}
-                  </span>
-                )}
-              </div>
-            </div>
-            <ShareButton
-              variant="icon"
-              input={{
-                profileAddress: profile.address,
-                title: profile.displayName,
-                text: profile.bio,
-              }}
-            />
-          </div>
+        <ProfileTabs
+          active={tab}
+          onChange={setTab}
+          postCount={authorPosts.length}
+        />
 
-          <p className="mb-4 text-sm leading-relaxed text-slate-600">
-            {profile.bio}
-          </p>
-
-          <div className="mb-4 space-y-3">
-            <TrustRelationDisplay profile={profile} />
-            {trustPath && (
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <TrustPathDisplay
-                  path={trustPath}
-                  resolveName={(a) => getUser(a)?.displayName ?? "?"}
+        {tab === "posts" && (
+          <div className="space-y-2 px-0 py-2 sm:px-3">
+            {authorPosts.length === 0 ? (
+              <div className="px-3">
+                <EmptyState
+                  icon={FileText}
+                  title="No posts yet"
+                  description={
+                    isOwnProfile
+                      ? "Share something with your trust circle from the feed."
+                      : `${profile.displayName} hasn't posted yet.`
+                  }
                 />
               </div>
+            ) : (
+              authorPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  ranked={rankPost(
+                    post,
+                    viewer.address,
+                    viewer.groups,
+                    getUser(post.authorAddress),
+                    trustEdges,
+                  )}
+                  onTrustAuthor={() => setTrustOpen(true)}
+                />
+              ))
             )}
           </div>
+        )}
 
-          {sharedCommunities.length > 0 && (
-            <div className="mb-4">
-              <p className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
-                <Users className="h-3 w-3" />
-                Shared communities
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {sharedCommunities.map((id) => {
-                  const c = COMMUNITY_MAP[id];
-                  return c ? (
-                    <Link
-                      key={id}
-                      href={`/community/${id}`}
-                      className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                    >
-                      {c.name}
-                    </Link>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          )}
+        {tab === "about" && <ProfileAboutSection profile={profile} />}
 
-          {profile.address !== viewer.address && (
-            <button
-              type="button"
-              disabled={
-                !canSignActions || profile.trustedByViewer || trustPending
-              }
-              onClick={() => setTrustOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
-            >
-              <HeartHandshake className="h-4 w-4" />
-              {trustPending ? "Trusting…" : trustLabel}
-            </button>
-          )}
-        </div>
-
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">
-          Recent posts
-        </h2>
-        <div className="space-y-4">
-          {authorPosts.length === 0 ? (
-            <p className="text-sm text-slate-500">No posts yet.</p>
-          ) : (
-            authorPosts.map((post) => (
-              <PostCard
-                key={post.id}
-                ranked={rankPost(
-                  post,
-                  viewer.address,
-                  viewer.groups,
-                  getUser(post.authorAddress),
-                  trustEdges,
-                )}
-                onTrustAuthor={() => setTrustOpen(true)}
-              />
-            ))
-          )}
-        </div>
+        {tab === "trust" && <ProfileTrustSection profile={profile} />}
       </div>
 
       {trustOpen && (
@@ -183,6 +112,15 @@ export function ProfileView({ profile }: ProfileViewProps) {
           onClose={() => setTrustOpen(false)}
         />
       )}
+
+      {editOpen && isOwnProfile && (
+        <EditProfileModal
+          profile={profile}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
+
+      <BottomNav />
     </div>
   );
 }

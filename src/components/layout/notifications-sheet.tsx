@@ -4,6 +4,7 @@
 import { X, Coins, HeartHandshake, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils/cn";
+import { DEMO_AVATARS } from "@/lib/mock/demo-media";
 
 interface NotificationsSheetProps {
   open: boolean;
@@ -17,7 +18,7 @@ const MOCK_NOTIFICATIONS = [
     color: "text-emerald-600 bg-emerald-50",
     title: "Bob tipped your post",
     time: "2h",
-    avatar: "https://placekitten.com/201/201",
+    avatar: DEMO_AVATARS.bob,
     unread: true,
   },
   {
@@ -26,7 +27,7 @@ const MOCK_NOTIFICATIONS = [
     color: "text-teal-600 bg-teal-50",
     title: "Carla trusted you on Circles",
     time: "5h",
-    avatar: "https://placekitten.com/203/203",
+    avatar: DEMO_AVATARS.carla,
     unread: true,
   },
   {
@@ -35,7 +36,7 @@ const MOCK_NOTIFICATIONS = [
     color: "text-sky-600 bg-sky-50",
     title: "New post in Circles Builders",
     time: "1d",
-    avatar: "https://placekitten.com/204/204",
+    avatar: DEMO_AVATARS.elena,
     unread: false,
   },
 ];

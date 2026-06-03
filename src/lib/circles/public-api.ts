@@ -14,6 +14,12 @@ import {
   MOCK_TRUST_EDGES,
 } from "@/lib/mock/trust-edges";
 
+import { VIEWER_ADDRESS } from "@/lib/mock/addresses";
+
+function isDemoViewerAddress(address: string): boolean {
+  return address.trim().toLowerCase() === VIEWER_ADDRESS.toLowerCase();
+}
+
 function profileFromMock(address: string): TrustbookProfile | null {
   const mock = getMockUser(address);
   if (!mock) return { address };
@@ -29,12 +35,17 @@ function profileFromMock(address: string): TrustbookProfile | null {
 export async function fetchCirclesProfile(
   address: string,
 ): Promise<TrustbookProfile | null> {
-  if (isMockMode && !getCirclesSession()) return profileFromMock(address);
+  if (isMockMode && !getCirclesSession() && isDemoViewerAddress(address)) {
+    return profileFromMock(address);
+  }
 
   try {
     return await fetchCirclesProfileFromSdk(address);
   } catch {
-    return profileFromMock(address) ?? { address };
+    if (isDemoViewerAddress(address)) {
+      return profileFromMock(address) ?? { address };
+    }
+    return { address };
   }
 }
 
@@ -42,7 +53,11 @@ export async function fetchCommonTrust(
   viewerAddress: string,
   targetAddress: string,
 ): Promise<CommonTrustResult> {
-  if (isMockMode && !getCirclesSession()) {
+  if (
+    isMockMode &&
+    !getCirclesSession() &&
+    isDemoViewerAddress(viewerAddress)
+  ) {
     return { count: getCommonTrustCount(viewerAddress, targetAddress) };
   }
 
@@ -67,7 +82,7 @@ function isHumanAvatar(type?: string): boolean {
 export async function fetchTrustRelations(
   address: string,
 ): Promise<TrustRelation[]> {
-  if (isMockMode && !getCirclesSession()) {
+  if (isMockMode && !getCirclesSession() && isDemoViewerAddress(address)) {
     const outgoing = MOCK_TRUST_EDGES.filter((e) => e.from === address).map(
       (e) => ({ address: e.to, direction: "outgoing" as const }),
     );
@@ -105,12 +120,15 @@ export async function fetchTrustRelations(
       })),
     ];
   } catch {
-    const outgoing = MOCK_TRUST_EDGES.filter((e) => e.from === address).map(
-      (e) => ({ address: e.to, direction: "outgoing" as const }),
-    );
-    const incoming = MOCK_TRUST_EDGES.filter((e) => e.to === address).map(
-      (e) => ({ address: e.from, direction: "incoming" as const }),
-    );
-    return [...outgoing, ...incoming];
+    if (isDemoViewerAddress(address)) {
+      const outgoing = MOCK_TRUST_EDGES.filter((e) => e.from === address).map(
+        (e) => ({ address: e.to, direction: "outgoing" as const }),
+      );
+      const incoming = MOCK_TRUST_EDGES.filter((e) => e.to === address).map(
+        (e) => ({ address: e.from, direction: "incoming" as const }),
+      );
+      return [...outgoing, ...incoming];
+    }
+    return [];
   }
 }

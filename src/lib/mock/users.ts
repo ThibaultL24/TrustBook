@@ -2,6 +2,7 @@
 
 import type { UserProfile } from "@/lib/types";
 import { MOCK_ADDRESSES, VIEWER_ADDRESS } from "./addresses";
+import { DEMO_AVATARS, DEMO_COVERS } from "./demo-media";
 import {
   authorTrustsViewer,
   getCommonTrustCount,
@@ -12,6 +13,7 @@ interface BaseUser {
   address: string;
   displayName: string;
   avatarUrl: string;
+  coverUrl: string;
   bio: string;
   trustScore?: number;
   trustLevel?: string;
@@ -23,7 +25,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: VIEWER_ADDRESS,
     displayName: "Alice Chen",
-    avatarUrl: "https://placekitten.com/200/200",
+    avatarUrl: DEMO_AVATARS.alice,
+    coverUrl: DEMO_COVERS.alice,
     bio: "Community organizer exploring Circles-native discovery.",
     trustScore: 82,
     trustLevel: "Established",
@@ -33,7 +36,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.bob,
     displayName: "Bob Okonkwo",
-    avatarUrl: "https://placekitten.com/201/201",
+    avatarUrl: DEMO_AVATARS.bob,
+    coverUrl: DEMO_COVERS.bob,
     bio: "Full-stack builder. Ships mini-apps for local economies.",
     trustScore: 91,
     trustLevel: "Highly trusted",
@@ -43,7 +47,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.carla,
     displayName: "Carla Mendez",
-    avatarUrl: "https://placekitten.com/202/202",
+    avatarUrl: DEMO_AVATARS.carla,
+    coverUrl: DEMO_COVERS.carla,
     bio: "Mutual aid coordinator. Connects needs with trusted helpers.",
     trustScore: 88,
     trustLevel: "Established",
@@ -53,7 +58,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.diego,
     displayName: "Diego Ruiz",
-    avatarUrl: "https://placekitten.com/203/203",
+    avatarUrl: DEMO_AVATARS.diego,
+    coverUrl: DEMO_COVERS.diego,
     bio: "Bike repair and tool library steward.",
     trustScore: 74,
     trustLevel: "Growing",
@@ -63,7 +69,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.elena,
     displayName: "Elena Vasquez",
-    avatarUrl: "https://placekitten.com/204/204",
+    avatarUrl: DEMO_AVATARS.elena,
+    coverUrl: DEMO_COVERS.elena,
     bio: "History walks and neighborhood storytelling.",
     trustScore: 79,
     trustLevel: "Established",
@@ -73,7 +80,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.fern,
     displayName: "Fern Taylor",
-    avatarUrl: "https://placekitten.com/205/205",
+    avatarUrl: DEMO_AVATARS.fern,
+    coverUrl: DEMO_COVERS.fern,
     bio: "Food sharing network. Weekly surplus redistribution.",
     trustScore: 85,
     trustLevel: "Established",
@@ -83,7 +91,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.gina,
     displayName: "Gina Park",
-    avatarUrl: "https://placekitten.com/206/206",
+    avatarUrl: DEMO_AVATARS.gina,
+    coverUrl: DEMO_COVERS.gina,
     bio: "Open-source design systems for community apps.",
     trustScore: 77,
     trustLevel: "Growing",
@@ -93,7 +102,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.hans,
     displayName: "Hans Weber",
-    avatarUrl: "https://placekitten.com/207/207",
+    avatarUrl: DEMO_AVATARS.hans,
+    coverUrl: DEMO_COVERS.hans,
     bio: "Woodworking workshops and skill shares.",
     trustScore: 70,
     trustLevel: "Growing",
@@ -103,7 +113,8 @@ const BASE_USERS: BaseUser[] = [
   {
     address: MOCK_ADDRESSES.iris,
     displayName: "Iris Nakamura",
-    avatarUrl: "https://placekitten.com/208/208",
+    avatarUrl: DEMO_AVATARS.iris,
+    coverUrl: DEMO_COVERS.iris,
     bio: "Event producer for community gatherings and hackathons.",
     trustScore: 83,
     trustLevel: "Established",

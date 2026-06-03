@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -32,16 +33,32 @@ import {
 } from "@/lib/circles/live-profiles";
 import { fetchCirclesProfile } from "@/lib/circles/public-api";
 import { syncTrustEdgesForViewer } from "@/lib/circles/sync-trust-edges";
+import {
+  fetchTrustPeers,
+  type TrustPeer,
+} from "@/lib/circles/trust-peers";
 import { resetDemoTour } from "@/components/demo/demo-tour";
 import { setIntuitionMockMode } from "@/lib/intuition/adapter";
 import { SEED_POSTS } from "@/lib/mock/posts";
 import { SEED_COMMENTS } from "@/lib/mock/comments";
 import { MOCK_TRUST_EDGES, VIEWER_TRUSTS } from "@/lib/mock/trust-edges";
 import { getMockUsers, VIEWER_PROFILE } from "@/lib/mock/users";
+import {
+  demoAvatarForAddress,
+  demoCoverForAddress,
+} from "@/lib/mock/demo-media";
 import { rankFeed, filterByTab } from "@/lib/ranking/feed-ranking";
 import { buildSeedStories, buildStoryGroups, storyExpiresAt } from "@/lib/stories/helpers";
 import type { StoryGroup } from "@/lib/stories/helpers";
 import { getTrustCircleAddresses } from "@/lib/trust/trust-circle";
+import {
+  applyProfileMediaToUser,
+  defaultCoverForAddress,
+  loadAllProfileMedia,
+  ProfileMediaStorageError,
+  saveProfileMedia,
+  type ProfileMedia,
+} from "@/lib/profile/profile-media-store";
 import type {
   FeedTab,
   Post,
@@ -111,6 +128,12 @@ interface TrustbookContextValue {
   sharePostToStory: (postId: string) => void;
   markStoryGroupViewed: (authorAddress: string) => void;
   getPostById: (postId: string) => Post | undefined;
+  trustPeers: TrustPeer[];
+  isLoadingTrustGraph: boolean;
+  trustGraphError: string | null;
+  refreshTrustGraph: () => Promise<void>;
+  getProfileMedia: (address: string) => ProfileMedia;
+  updateProfileMedia: (address: string, patch: Partial<ProfileMedia>) => boolean;
 }
 
 const TrustbookContext = createContext<TrustbookContextValue | null>(null);
@@ -128,6 +151,17 @@ function toastFromResult(result: CirclesActionResult): {
     return { message: result.message, type: "info" };
   }
   return { message: result.message, type: "error" };
+}
+
+function profileMediaKey(address: string): string {
+  return address.trim().toLowerCase();
+}
+
+function withProfileMedia(
+  profile: UserProfile,
+  mediaMap: Record<string, ProfileMedia>,
+): UserProfile {
+  return applyProfileMediaToUser(profile, mediaMap);
 }
 
 export function TrustbookProvider({ children }: { children: ReactNode }) {
@@ -156,6 +190,16 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     ),
   );
   const [viewedStoryIds, setViewedStoryIds] = useState<Set<string>>(new Set());
+  const [trustPeers, setTrustPeers] = useState<TrustPeer[]>([]);
+  const [isLoadingTrustGraph, setIsLoadingTrustGraph] = useState(false);
+  const [trustGraphError, setTrustGraphError] = useState<string | null>(null);
+  const [profileMediaMap, setProfileMediaMap] = useState<
+    Record<string, ProfileMedia>
+  >({});
+
+  useLayoutEffect(() => {
+    setProfileMediaMap(loadAllProfileMedia());
+  }, []);
 
   const canSignActions = usesLiveWallet && !isReadonlyMode;
 
@@ -225,26 +269,51 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     };
   }, [viewerAddress]);
 
-  useEffect(() => {
-    if (!usesLiveWallet || !circlesAvatarAddress) return;
+  const isLiveViewer = Boolean(
+    circlesAvatarAddress &&
+      circlesAvatarAddress.toLowerCase() !== VIEWER_ADDRESS.toLowerCase(),
+  );
 
-    let cancelled = false;
-    void (async () => {
-      try {
-        const { edges, viewerTrusts: trusts } =
-          await syncTrustEdgesForViewer(circlesAvatarAddress);
-        if (cancelled) return;
-        setTrustEdges(edges);
-        setViewerTrusts(trusts);
-      } catch {
-        /* seed graph fallback */
+  const refreshTrustGraph = useCallback(async () => {
+    if (!circlesAvatarAddress || !isLiveViewer) {
+      setTrustPeers([]);
+      setTrustGraphError(null);
+      return;
+    }
+
+    setIsLoadingTrustGraph(true);
+    setTrustGraphError(null);
+    try {
+      const [syncResult, peers] = await Promise.all([
+        syncTrustEdgesForViewer(circlesAvatarAddress),
+        fetchTrustPeers(circlesAvatarAddress),
+      ]);
+
+      setTrustEdges((prev) => {
+        if (syncResult.edges.length === 0) return prev;
+        return syncResult.edges;
+      });
+      setViewerTrusts(syncResult.viewerTrusts);
+      setTrustPeers(peers);
+
+      if (peers.length === 0 && syncResult.edges.length === 0) {
+        setTrustGraphError(
+          "No trust connections found for this Circles avatar yet.",
+        );
       }
-    })();
+    } catch (err) {
+      setTrustGraphError(
+        err instanceof Error ? err.message : "Could not load trust graph",
+      );
+    } finally {
+      setIsLoadingTrustGraph(false);
+    }
+  }, [circlesAvatarAddress, isLiveViewer]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [usesLiveWallet, circlesAvatarAddress]);
+  useEffect(() => {
+    if (!isLiveViewer) return;
+    void refreshTrustGraph();
+  }, [isLiveViewer, refreshTrustGraph]);
 
   useEffect(() => {
     if (!usesLiveWallet) {
@@ -278,23 +347,80 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
   }, [circlesAvatarAddress, usesLiveWallet]);
 
   const users = useMemo(() => {
-    return getMockUsers(viewerAddress).map((u) => {
-      if (u.address === viewerAddress) return u;
+    const mockUsers = getMockUsers(viewerAddress).map((u) => {
+      if (u.address.toLowerCase() === viewerAddress.toLowerCase()) return u;
       return {
         ...u,
-        trustedByViewer: viewerTrusts.includes(u.address),
+        trustedByViewer: viewerTrusts.some(
+          (a) => a.toLowerCase() === u.address.toLowerCase(),
+        ),
         trustsViewer: trustEdges.some(
-          (e) => e.from === u.address && e.to === viewerAddress,
+          (e) =>
+            e.from.toLowerCase() === u.address.toLowerCase() &&
+            e.to.toLowerCase() === viewerAddress.toLowerCase(),
         ),
         mutualTrustCount: u.mutualTrustCount,
       };
     });
-  }, [viewerTrusts, trustEdges, viewerAddress]);
+
+    const known = new Set(
+      mockUsers.map((u) => u.address.trim().toLowerCase()),
+    );
+
+    const fromPeers: UserProfile[] = trustPeers
+      .filter((p) => !known.has(p.address.toLowerCase()))
+      .map((peer) => ({
+        address: peer.address,
+        displayName: peer.displayName ?? peer.address.slice(0, 10),
+        avatarUrl:
+          peer.avatarUrl ??
+          demoAvatarForAddress(peer.address) ??
+          `https://placekitten.com/220/220`,
+        bio: "",
+        groups: [],
+        trustedByViewer: peer.relation === "trusts" || peer.relation === "mutual",
+        trustsViewer: peer.relation === "trustedBy" || peer.relation === "mutual",
+        mutualTrustCount: peer.relation === "mutual" ? 1 : 0,
+      }));
+
+    return [...mockUsers, ...fromPeers];
+  }, [viewerTrusts, trustEdges, viewerAddress, trustPeers]);
 
   const viewer = useMemo(() => {
-    if (walletViewer) return walletViewer;
-    return users.find((u) => u.address === viewerAddress) ?? VIEWER_PROFILE;
-  }, [users, viewerAddress, walletViewer]);
+    const base = walletViewer
+      ? walletViewer
+      : (users.find((u) => u.address === viewerAddress) ?? VIEWER_PROFILE);
+    return withProfileMedia(base, profileMediaMap);
+  }, [users, viewerAddress, walletViewer, profileMediaMap]);
+
+  const getProfileMedia = useCallback(
+    (address: string) => profileMediaMap[profileMediaKey(address)] ?? {},
+    [profileMediaMap],
+  );
+
+  const updateProfileMedia = useCallback(
+    (address: string, patch: Partial<ProfileMedia>): boolean => {
+      try {
+        const saved = saveProfileMedia(address, patch);
+        const key = profileMediaKey(address);
+        setProfileMediaMap((prev) => {
+          const next = { ...prev };
+          if (Object.keys(saved).length === 0) delete next[key];
+          else next[key] = saved;
+          return next;
+        });
+        return true;
+      } catch (err) {
+        const message =
+          err instanceof ProfileMediaStorageError
+            ? err.message
+            : "Could not save profile photos.";
+        showActionToast(message, "error");
+        return false;
+      }
+    },
+    [showActionToast],
+  );
 
   const getUser = useCallback(
     (address: string) => {
@@ -303,8 +429,9 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       const mock = users.find(
         (u) => u.address.trim().toLowerCase() === key,
       );
+      let profile: UserProfile | undefined;
       if (live) {
-        return {
+        profile = {
           ...live,
           trustedByViewer:
             mock?.trustedByViewer ?? live.trustedByViewer,
@@ -312,12 +439,20 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
           mutualTrustCount: mock?.mutualTrustCount ?? live.mutualTrustCount,
           groups: mock?.groups ?? live.groups,
         };
+      } else if (mock) {
+        profile = mock;
+      } else if (
+        walletViewer &&
+        walletViewer.address.trim().toLowerCase() === key
+      ) {
+        profile = walletViewer;
+      } else if (isLiveCirclesAuthor(address)) {
+        profile = liveAuthorPlaceholder(address);
       }
-      if (mock) return mock;
-      if (isLiveCirclesAuthor(address)) return liveAuthorPlaceholder(address);
-      return undefined;
+      if (!profile) return undefined;
+      return withProfileMedia(profile, profileMediaMap);
     },
-    [users, liveProfiles],
+    [users, liveProfiles, profileMediaMap, walletViewer],
   );
 
   const getPostsByAuthor = useCallback(
@@ -638,6 +773,8 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       ),
     );
     setViewedStoryIds(new Set());
+    setTrustPeers([]);
+    setTrustGraphError(null);
     setCommunityFilter(null);
     setFocusedPostId(null);
     setPendingActions({});
@@ -708,6 +845,12 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     sharePostToStory,
     markStoryGroupViewed,
     getPostById,
+    trustPeers,
+    isLoadingTrustGraph,
+    trustGraphError,
+    refreshTrustGraph,
+    getProfileMedia,
+    updateProfileMedia,
   };
 
   return (

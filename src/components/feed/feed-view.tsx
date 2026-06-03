@@ -29,6 +29,7 @@ import { TrustConfirmModal } from "@/components/trust/trust-confirm-modal";
 import { CreatePostModal } from "@/components/posts/create-post-modal";
 import { PostFocusModal } from "@/components/posts/post-focus-modal";
 import { ToastStack } from "@/components/ui/toast-stack";
+import { TrustCirclePanel } from "@/components/trust/trust-circle-panel";
 import { Inbox, Users } from "lucide-react";
 
 function getInitialTourOpen(): boolean {
@@ -148,6 +149,11 @@ export function FeedView() {
           onOpenStory={setActiveStoryAuthor}
         />
         <PostComposer onOpenCreate={openCreate} />
+        {(usesLiveWallet || isGuest) && (
+          <div className="px-3 sm:px-0">
+            <TrustCirclePanel compact={tab !== "circle"} />
+          </div>
+        )}
       </div>
 
       <FeedTabs active={tab} onChange={setTab} />
