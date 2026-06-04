@@ -31,10 +31,10 @@ const MODE_META: Record<
   ComposerMode,
   { title: string; icon: typeof Video; accent: string }
 > = {
-  standard: { title: "Créer une publication", icon: Smile, accent: "text-slate-700" },
-  live: { title: "Passer en direct", icon: Video, accent: "text-rose-600" },
-  photo: { title: "Partager une photo", icon: ImageIcon, accent: "text-emerald-600" },
-  mood: { title: "Partager un ressenti", icon: Smile, accent: "text-amber-500" },
+  standard: { title: "Create post", icon: Smile, accent: "text-slate-700" },
+  live: { title: "Go live", icon: Video, accent: "text-rose-600" },
+  photo: { title: "Share a photo", icon: ImageIcon, accent: "text-emerald-600" },
+  mood: { title: "Share a feeling", icon: Smile, accent: "text-amber-500" },
 };
 
 const AUDIENCE_OPTIONS: {
@@ -44,18 +44,18 @@ const AUDIENCE_OPTIONS: {
 }[] = [
   {
     id: "circle",
-    label: "Cercle",
-    hint: "Personnes de votre graphe de confiance Circles",
+    label: "Circle",
+    hint: "People in your Circles trust graph",
   },
   {
     id: "communities",
-    label: "Communautés",
-    hint: "Membres de la communauté choisie (+ votre cercle)",
+    label: "Communities",
+    hint: "Members of the selected community (+ your circle)",
   },
   {
     id: "discovery",
-    label: "Découverte",
-    hint: "Visible dans l’accueil élargi, toujours classé par confiance",
+    label: "Discovery",
+    hint: "Visible in the broader home feed, still ranked by trust",
   },
 ];
 
@@ -89,7 +89,7 @@ export function CreatePostModal({
   const [body, setBody] = useState("");
   const [amountRequested, setAmountRequested] = useState("");
   const [tagsRaw, setTagsRaw] = useState(
-    mode === "live" ? "live, communauté" : mode === "photo" ? "photo" : "",
+    mode === "live" ? "live, community" : mode === "photo" ? "photo" : "",
   );
   const [imageUrl, setImageUrl] = useState(
     mode === "photo" ? "https://placekitten.com/320/320" : "",
@@ -116,22 +116,22 @@ export function CreatePostModal({
     const resolvedTitle =
       title.trim() ||
       defaultTitleForMode(mode, moodOption?.label) ||
-      (isThought ? "" : "Publication sans titre");
+      (isThought ? "" : "Untitled post");
 
     if (!isThought && resolvedTitle.length < 3) {
-      setError("Le titre doit contenir au moins 3 caractères.");
+      setError("Title must be at least 3 characters.");
       return;
     }
     if (body.trim().length < 10) {
-      setError("Le texte doit contenir au moins 10 caractères.");
+      setError("Body must be at least 10 characters.");
       return;
     }
     if (mode === "photo" && !imageUrl.trim()) {
-      setError("Ajoutez une URL de photo ou utilisez l’aperçu suggéré.");
+      setError("Add a photo URL or use the suggested placeholder.");
       return;
     }
     if (audience === "communities" && !communityId) {
-      setError("Choisissez une communauté pour cette portée.");
+      setError("Choose a community for this audience.");
       return;
     }
 
@@ -161,9 +161,9 @@ export function CreatePostModal({
 
   const modalTitle = isThought
     ? mode === "standard"
-      ? "Partager une pensée"
+      ? "Share a thought"
       : meta.title
-    : "Publier une annonce";
+    : "Post a listing";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4">
@@ -177,7 +177,7 @@ export function CreatePostModal({
             type="button"
             onClick={onClose}
             className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
-            aria-label="Fermer"
+            aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
@@ -185,15 +185,15 @@ export function CreatePostModal({
 
         {mode === "live" && (
           <p className="mb-4 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-800 ring-1 ring-rose-100">
-            Le direct notifie votre cercle. Les posts live restent en tête du fil
-            24h pour les personnes autorisées à voir la publication.
+            Going live notifies your trust circle. Live posts stay at the top of
+            the feed for 24h for people allowed to see the post.
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-2 block text-xs font-semibold text-slate-600">
-              Qui peut voir ?
+              Who can see this?
             </label>
             <div className="space-y-2">
               {AUDIENCE_OPTIONS.map((opt) => (
@@ -230,7 +230,7 @@ export function CreatePostModal({
           {!isThought && mode === "standard" && (
             <div>
               <label className="mb-2 block text-xs font-semibold text-slate-600">
-                Modèles rapides
+                Quick templates
               </label>
               <div className="flex flex-wrap gap-2">
                 {POST_TEMPLATES.map((tpl) => (
@@ -255,7 +255,7 @@ export function CreatePostModal({
           {mode === "mood" && (
             <div>
               <label className="mb-2 block text-xs font-semibold text-slate-600">
-                Comment vous sentez-vous ?
+                How are you feeling?
               </label>
               <div className="flex flex-wrap gap-2">
                 {MOOD_OPTIONS.map((m) => (
@@ -283,7 +283,7 @@ export function CreatePostModal({
           {mode === "photo" && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">
-                URL de la photo
+                Photo URL
               </label>
               <input
                 value={imageUrl}
@@ -295,7 +295,7 @@ export function CreatePostModal({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={imageUrl}
-                  alt="Aperçu"
+                  alt="Preview"
                   className="mt-2 max-h-40 w-full rounded-xl object-cover"
                 />
               )}
@@ -305,7 +305,7 @@ export function CreatePostModal({
           {!isThought && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Type d’annonce
+                Listing type
               </label>
               <select
                 value={type}
@@ -313,10 +313,10 @@ export function CreatePostModal({
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 disabled={mode === "live"}
               >
-                <option value="recommendation">Recommandation</option>
-                <option value="offer">Offre</option>
-                <option value="need">Besoin</option>
-                <option value="event">Événement</option>
+                <option value="recommendation">Recommendation</option>
+                <option value="offer">Offer</option>
+                <option value="need">Need</option>
+                <option value="event">Event</option>
               </select>
             </div>
           )}
@@ -324,7 +324,7 @@ export function CreatePostModal({
           {(audience === "communities" || !isThought) && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Communauté
+                Community
               </label>
               <select
                 value={communityId}
@@ -348,14 +348,14 @@ export function CreatePostModal({
           {(!isThought || mode !== "standard") && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Titre {isThought ? "(optionnel)" : ""}
+                Title {isThought ? "(optional)" : ""}
               </label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 placeholder={
-                  isThought ? "Optionnel" : "Que partagez-vous ?"
+                  isThought ? "Optional" : "What are you sharing?"
                 }
               />
             </div>
@@ -363,7 +363,7 @@ export function CreatePostModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-600">
-              {mode === "live" ? "Description du direct" : "Texte"}
+              {mode === "live" ? "Live description" : "Body"}
             </label>
             <textarea
               value={body}
@@ -372,7 +372,7 @@ export function CreatePostModal({
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
               placeholder={
                 isThought
-                  ? "Exprimez-vous librement — actualités, idées, vie quotidienne…"
+                  ? "Share freely — news, ideas, everyday life…"
                   : placeholderForMode(mode)
               }
               required
@@ -384,7 +384,7 @@ export function CreatePostModal({
             mode !== "mood" && (
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">
-                  Montant demandé (CRC, optionnel)
+                  Amount requested (CRC, optional)
                 </label>
                 <input
                   type="number"
@@ -398,13 +398,13 @@ export function CreatePostModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-600">
-              Tags (séparés par des virgules)
+              Tags (comma-separated)
             </label>
             <input
               value={tagsRaw}
               onChange={(e) => setTagsRaw(e.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              placeholder="entraide, local"
+              placeholder="mutual-aid, local"
             />
           </div>
 
@@ -416,7 +416,7 @@ export function CreatePostModal({
                 onChange={(e) => setShareToStory(e.target.checked)}
                 className="rounded border-emerald-300 text-emerald-600"
               />
-              Partager aussi en story (24h)
+              Also share to my story (24h)
             </label>
           )}
 
@@ -435,7 +435,7 @@ export function CreatePostModal({
                 : "bg-emerald-600 hover:bg-emerald-700",
             )}
           >
-            {mode === "live" ? "Passer en direct" : "Publier"}
+            {mode === "live" ? "Go live" : "Publish"}
           </button>
         </form>
       </div>

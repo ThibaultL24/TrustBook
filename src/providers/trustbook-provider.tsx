@@ -565,7 +565,7 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
         viewer.crcBalance != null &&
         viewer.crcBalance < 1
       ) {
-        showActionToast("Solde CRC insuffisant", "info");
+        showActionToast("Insufficient CRC balance", "info");
         return;
       }
 
@@ -622,7 +622,7 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
         viewer.crcBalance != null &&
         viewer.crcBalance < amount
       ) {
-        showActionToast("Solde CRC insuffisant pour le boost", "info");
+        showActionToast("Insufficient CRC for boost", "info");
         return;
       }
 
@@ -750,14 +750,14 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       }
 
       const audienceToast: Record<PostAudience, string> = {
-        circle: "Publié pour votre cercle de confiance",
-        communities: "Publié pour vos communautés",
-        discovery: "Publié en découverte",
+        circle: "Published to your trust circle",
+        communities: "Published to your communities",
+        discovery: "Published for discovery",
       };
 
       showActionToast(
         input.isLive
-          ? "Vous êtes en direct — votre cercle a été notifié"
+          ? "You are live — your trust circle was notified"
           : audienceToast[audience],
       );
       return post;

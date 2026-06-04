@@ -9,9 +9,9 @@ export const HISTORY_GUESSR_COMMUNITY_ID = "history-guessr";
 export const MOCK_COMMUNITIES: Community[] = [
   {
     id: OPEN_FEED_COMMUNITY_ID,
-    name: "Fil ouvert",
+    name: "Open feed",
     description:
-      "Publications libres sans communauté ciblée — visibles selon la portée choisie (cercle, découverte).",
+      "Free-form posts without a targeted community — visibility follows the audience you choose (circle, discovery).",
     avatarUrl: "https://placekitten.com/100/100",
     memberCount: 999,
     category: "other",
@@ -20,7 +20,7 @@ export const MOCK_COMMUNITIES: Community[] = [
     id: HISTORY_GUESSR_COMMUNITY_ID,
     name: "History Guessr",
     description:
-      "Groupe HIST sur Gnosis — même économie que le mini-app OpenCircles / History Guessr.",
+      "HIST group on Gnosis — same economy as the OpenCircles / History Guessr mini-app.",
     avatarUrl: "https://placekitten.com/105/105",
     memberCount: 42,
     category: "education",

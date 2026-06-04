@@ -5,13 +5,13 @@ import type { FeedRubric } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
 const RUBRICS: { id: FeedRubric; label: string }[] = [
-  { id: "all", label: "Tout" },
-  { id: "thoughts", label: "Pensées" },
-  { id: "needs", label: "Besoins" },
-  { id: "offers", label: "Offres" },
+  { id: "all", label: "All" },
+  { id: "thoughts", label: "Thoughts" },
+  { id: "needs", label: "Needs" },
+  { id: "offers", label: "Offers" },
   { id: "recos", label: "Recos" },
-  { id: "events", label: "Événements" },
-  { id: "circle", label: "Mon cercle" },
+  { id: "events", label: "Events" },
+  { id: "circle", label: "My circle" },
 ];
 
 interface FeedRubricChipsProps {

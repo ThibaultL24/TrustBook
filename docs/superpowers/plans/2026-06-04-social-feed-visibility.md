@@ -1,117 +1,72 @@
-# Fil social & portée — Implementation Plan
+# Social feed & audience — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publications libres (`thought`) avec portée Cercle/Communautés/Découverte, fil Accueil unique et rubriques en chips, visibilité alignée sur le graphe Circles.
+**Goal:** Free-form posts (`thought`) with Circle/Communities/Discovery audience, single Home feed and rubric chips, visibility aligned with the Circles graph.
 
-**Architecture:** `Post.audience` + `canViewerSeePost()` appliqué avant `rankFeed` ; remplacement `FeedTab` par `FeedRubric` ; UI chips + composer pensée avec sélecteur de portée.
+**Architecture:** `Post.audience` + `canViewerSeePost()` before `rankFeed`; replace `FeedTab` with `FeedRubric`; thought composer with audience selector.
 
 **Tech Stack:** Next.js App Router, React, TypeScript, Vitest, Tailwind, TrustbookProvider mock state.
 
 ---
 
-### Task 1: Types & visibilité
+### Task 1: Types & visibility
 
 **Files:**
 - Modify: `src/lib/types/index.ts`
 - Create: `src/lib/posts/visibility.ts`
 - Create: `src/lib/posts/visibility.test.ts`
-- Modify: `src/lib/mock/communities.ts` (ajout `open-feed` si absent)
+- Modify: `src/lib/mock/communities.ts` (add `open-feed` if missing)
 
-- [ ] **Step 1: Étendre types**
-
-Ajouter `PostAudience`, `FeedRubric`, type `thought`, champ `audience` sur `Post`, remplacer `FeedTab`.
-
-- [ ] **Step 2: Tests visibilité**
-
-```ts
-// visibility.test.ts — cas circle / communities / discovery + auteur
-```
-
-- [ ] **Step 3: Implémenter `canViewerSeePost`**
-
-```ts
-export function canViewerSeePost(
-  viewerAddress: string,
-  post: Post,
-  viewerGroups: string[],
-  edges?: TrustEdge[],
-): boolean
-```
-
-- [ ] **Step 4:** `npm test -- src/lib/posts/visibility.test.ts`
+- [ ] Extend types: `PostAudience`, `FeedRubric`, `thought`, `audience` on `Post`.
+- [ ] Visibility tests.
+- [ ] Implement `canViewerSeePost`.
+- [ ] Run `npm test -- src/lib/posts/visibility.test.ts`
 
 ---
 
 ### Task 2: Ranking & provider
 
 **Files:**
-- Modify: `src/lib/ranking/feed-ranking.ts`
-- Modify: `src/lib/ranking/feed-ranking.test.ts`
-- Modify: `src/providers/trustbook-provider.tsx`
+- Modify: `src/lib/ranking/feed-ranking.ts`, tests, `src/providers/trustbook-provider.tsx`
 
-- [ ] Remplacer `filterByTab` par `filterByRubric(ranked, rubric, viewer, edges)`.
-- [ ] `getRankedFeed(rubric, communityId?)` : `rankFeed` → `filter` audience → rubric → community.
-- [ ] `createPost` accepte `audience`, défauts, toast selon portée.
-- [ ] Migrer seeds : `audience` sur tous les posts existants.
+- [ ] Replace `filterByTab` with `filterByRubric`.
+- [ ] `getRankedFeed(rubric, communityId?)`.
+- [ ] `createPost` accepts `audience`, toasts by audience.
+- [ ] Migrate seeds with `audience`.
 
 ---
 
-### Task 3: UI fil
+### Task 3: Feed UI
 
 **Files:**
 - Create: `src/components/feed/feed-rubric-chips.tsx`
-- Delete or repurpose: `src/components/feed/feed-tabs.tsx`
 - Modify: `src/components/feed/feed-view.tsx`
 
-- [ ] Chips horizontaux FR, état `FeedRubric`.
-- [ ] En-tête « Accueil », retirer bannière onglet Circle seule.
-- [ ] Brancher `getRankedFeed`.
+- [ ] English rubric chips, `FeedRubric` state.
+- [ ] **Home** header.
+- [ ] Wire `getRankedFeed`.
 
 ---
 
-### Task 4: Composer & cartes
+### Task 4: Composer & cards
 
 **Files:**
-- Modify: `src/components/posts/create-post-modal.tsx`
-- Modify: `src/components/feed/post-composer.tsx`
-- Modify: `src/components/posts/post-card.tsx`
-- Modify: `src/components/posts/post-type-badge.tsx`
-- Create: `src/components/posts/post-audience-badge.tsx`
+- Modify: `create-post-modal.tsx`, `post-composer.tsx`, `post-card.tsx`, badges
 
-- [ ] `PostComposer` : pensée par défaut ; lien annonce utilitaire.
-- [ ] Modal pensée : portée 3 options, communauté conditionnelle, titre optionnel pour `thought`.
-- [ ] Badges audience + thought sur carte.
+- [ ] Thought by default; utility listing link.
+- [ ] Audience selector; conditional community; optional title for `thought`.
 
 ---
 
-### Task 5: Stories, profil, mock
+### Task 5: Stories, profile, mock
 
-**Files:**
-- Modify: `src/lib/stories/helpers.ts`
-- Modify: `src/lib/mock/posts.ts`
-- Modify: `src/components/profile/profile-view.tsx` (si fil posts auteur)
-
-- [ ] Stories : filtrer posts non visibles.
-- [ ] 6+ posts `thought` démo (2 par portée).
-- [ ] Profil : masquer posts non visibles au viewer.
+- [ ] Story visibility filter.
+- [ ] Demo `thought` posts (3 audiences).
+- [ ] Profile hides non-visible posts.
 
 ---
 
-### Task 6: Vérification
+### Task 6: Verification
 
-- [ ] `npm test`
-- [ ] `npm run lint`
-- [ ] `npm run build`
-
----
-
-## Spec coverage
-
-| Exigence spec | Task |
-|---------------|------|
-| `PostAudience` + `thought` | 1 |
-| `canViewerSeePost` | 1–2 |
-| Accueil + chips rubriques | 3 |
-| Composer portée C | 4 |
-| Stories / profil | 5 |
+- [ ] `npm test`, `npm run lint`, `npm run build`

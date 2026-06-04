@@ -128,15 +128,15 @@ export function FeedView() {
 
   const emptyTitle =
     rubric === "circle"
-      ? "Aucune publication de votre cercle"
+      ? "No posts from your circle yet"
       : rubric === "thoughts"
-        ? "Aucune pensée pour l’instant"
-        : "Rien à afficher ici";
+        ? "No thoughts yet"
+        : "Nothing to show here";
 
   const emptyDescription =
     rubric === "circle"
-      ? "Faites confiance à plus d’auteurs sur Circles pour remplir ce filtre."
-      : "Changez de rubrique ou publiez avec la portée qui vous convient.";
+      ? "Trust more authors on Circles to fill this filter."
+      : "Try another rubric or publish with the audience that fits.";
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-24">
@@ -147,7 +147,7 @@ export function FeedView() {
         <div className="mx-auto max-w-lg px-3 py-2">
           <div className="flex flex-col gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-600">
-              Navigation invité · connectez-vous pour tip & trust sur Gnosis
+              Browsing as guest · connect to tip & trust on Gnosis
             </p>
             <ConnectWalletButton className="sm:max-w-[180px]" variant="outline" />
           </div>
@@ -157,10 +157,10 @@ export function FeedView() {
       {usesLiveWallet && (
         <div className="mx-auto max-w-lg px-3 pb-1">
           <p className="rounded-lg bg-emerald-600 px-3 py-1.5 text-center text-[11px] font-medium text-white">
-            Connecté ·{" "}
+            Connected ·{" "}
             {viewer.crcBalance != null
-              ? `${viewer.crcBalance} CRC disponibles`
-              : "chargement du solde CRC…"}
+              ? `${viewer.crcBalance} CRC available`
+              : "loading CRC balance…"}
           </p>
         </div>
       )}
@@ -182,9 +182,9 @@ export function FeedView() {
       </div>
 
       <div className="mx-auto max-w-lg border-b border-[var(--border)] bg-white px-3 py-2">
-        <h1 className="text-lg font-bold text-slate-900">Accueil</h1>
+        <h1 className="text-lg font-bold text-slate-900">Home</h1>
         <p className="text-xs text-slate-500">
-          Publications classées par confiance · portée choisie par l’auteur
+          Posts ranked by trust · audience set by the author
         </p>
       </div>
 

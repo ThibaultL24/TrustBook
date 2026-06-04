@@ -9,17 +9,17 @@ const CONFIG: Record<
   { label: string; className: string; Icon: typeof Users }
 > = {
   circle: {
-    label: "Cercle",
+    label: "Circle",
     className: "bg-emerald-50 text-emerald-800 border-emerald-100",
     Icon: UsersRound,
   },
   communities: {
-    label: "Communautés",
+    label: "Communities",
     className: "bg-violet-50 text-violet-800 border-violet-100",
     Icon: Users,
   },
   discovery: {
-    label: "Découverte",
+    label: "Discovery",
     className: "bg-sky-50 text-sky-800 border-sky-100",
     Icon: Globe,
   },

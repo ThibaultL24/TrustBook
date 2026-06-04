@@ -12,19 +12,19 @@ function parseAddress(
   return fallback;
 }
 
-/** Circles Safe — profil Lenormand, CRC utilisable pour tips live. */
+/** Circles Safe — Lenormand profile, CRC for live tips. */
 export const HIST_GUESSR_SAFE_ADDRESS = parseAddress(
   process.env.NEXT_PUBLIC_HIST_GUESSR_SAFE,
   "0xD55a912aF5639a6769AE5c1894C0c7BFB5Bf539E",
 );
 
-/** Groupe History Guessr (HIST) sur Gnosis. */
+/** History Guessr (HIST) group on Gnosis. */
 export const HIST_GROUP_ADDRESS = parseAddress(
   process.env.NEXT_PUBLIC_HIST_GROUP_ADDRESS,
   "0x5AC1C8b6c9BCB8D1a8Ef4fa5484738877EfA763E",
 );
 
-/** Gnosis Group — ancre de confiance (partagé avec History Guessr). */
+/** Gnosis Group — trust anchor (shared with History Guessr). */
 export const GNOSIS_GROUP_TRUST_ANCHOR = parseAddress(
   process.env.NEXT_PUBLIC_GNOSIS_GROUP_ADDRESS,
   "0xc19bc204eb1c1d5b3fe500e5e5dfabab625f286c",

@@ -83,7 +83,7 @@ Patterns ported from [OpenCircles](/root/OpenCircles) (History Guessr): `@aboutc
 
 Live demo posts use **History Guessr** Circles addresses (same as OpenCircles):
 
-| Rôle | Adresse |
+| Role | Address |
 |------|---------|
 | Safe Lenormand (CRC, tips live) | `0xD55a912aF5639a6769AE5c1894C0c7BFB5Bf539E` |
 | Groupe HIST | `0x5AC1C8b6c9BCB8D1a8Ef4fa5484738877EfA763E` |

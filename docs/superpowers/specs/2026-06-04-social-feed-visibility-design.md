@@ -1,69 +1,69 @@
-# Fil social Trustbook — portée & Accueil
+# Trustbook social feed — audience & Home
 
-**Date :** 2026-06-04  
-**Statut :** Approuvé (choix utilisateur : portée C, accueil A)
+**Date:** 2026-06-04  
+**Status:** Approved (user choices: audience C, home A)
 
-## Objectif
+## Goal
 
-Transformer Trustbook en expérience plus proche d’un réseau social : publications libres sur tout sujet, rubriques utilitaires en raccourcis, et **portée choisie à la publication** (Cercle / Communautés / Découverte) avec la **même logique de cercle de confiance Circles** que le reste du produit.
+Move Trustbook closer to a social network: free-form posts on any topic, utility rubrics as shortcuts, and **audience chosen at publish time** (Circle / Communities / Discovery) with the **same Circles trust-circle logic** as the rest of the product.
 
-## Décisions produit
+## Product decisions
 
-| Sujet | Décision |
+| Topic | Decision |
 |-------|----------|
-| Portée | **C** — choix à chaque publication |
-| Fil principal | **A** — un fil **Accueil** + carousel rubriques |
-| Approche technique | Champ `audience` + `canViewerSeePost()` central |
+| Audience | **C** — choose on each post |
+| Main feed | **A** — single **Home** feed + rubric carousel |
+| Technical approach | `audience` field + central `canViewerSeePost()` |
 
-## Modèle de données
+## Data model
 
 ```ts
 type PostAudience = "circle" | "communities" | "discovery";
 type PostType = "thought" | "recommendation" | "offer" | "need" | "event";
 ```
 
-- `Post.audience` obligatoire ; défaut **`circle`** pour `type === "thought"`.
-- `communityId` obligatoire si `audience === "communities"` ; sinon optionnel avec fallback `open-feed` (communauté générale démo).
-- `type === "thought"` : titre optionnel (affichage corps-first), corps min. 10 caractères.
+- `Post.audience` required; default **`circle`** for `type === "thought"`.
+- `communityId` required if `audience === "communities"`; otherwise optional with `open-feed` fallback.
+- `type === "thought"`: optional title (body-first), body min. 10 characters.
 
-## Règles de visibilité
+## Visibility rules
 
-| `audience` | Visible si |
+| `audience` | Visible if |
 |------------|------------|
-| `circle` | Auteur = viewer, ou `isInTrustCircle(viewer, author, edges)` |
-| `communities` | Règle cercle **ou** `viewer.groups.includes(post.communityId)` |
-| `discovery` | Tous les viewers (démo mock) |
+| `circle` | Viewer is author, or `isInTrustCircle(viewer, author, edges)` |
+| `communities` | Circle rule **or** `viewer.groups.includes(post.communityId)` |
+| `discovery` | All viewers (mock demo) |
 
-Appliquer avant ranking dans Accueil, profils, modales focus, et filtrage stories (stories : auteurs cercle + posts dont le viewer peut voir le post source).
+Apply before ranking in Home, profiles, focus modals, and story filtering.
 
-## UX fil (`/feed`)
+## Feed UX (`/feed`)
 
-- Remplacer les onglets multiples par un titre/zone **Accueil**.
-- Carousel **Rubriques** : `Tout` · `Pensées` · `Besoins` · `Offres` · `Recos` · `Événements` · `Mon cercle`.
-- Filtre communauté existant conservé.
-- Chip `Mon cercle` = auteurs dans le graphe (complément du filtre portée).
+- Replace multiple tabs with a **Home** header.
+- **Rubric** carousel: `All` · `Thoughts` · `Needs` · `Offers` · `Recos` · `Events` · `My circle`.
+- Keep existing community filter.
+- `My circle` chip = authors in the trust graph (complements audience filter).
 
 ## Composer
 
-- Entrée principale → mode **Pensée** + sélecteur portée (3 options, libellés FR).
-- Lien secondaire **Publier une annonce** → flux actuel (type + communauté).
-- Stories : proposer seulement si la portée inclut le cercle (`circle` ou `communities` avec membres cercle).
+- Main entry → **Thought** mode + audience selector (3 options, English labels).
+- Secondary **Post a listing** link → utility flow (type + community).
+- Stories: only when audience includes the circle.
 
 ## Ranking
 
-- Inchangé (`rankFeed`, trust, CRC, Intuition).
-- `filterByTab` remplacé par `filterByRubric` + `applyAudienceFilter`.
+- Unchanged (`rankFeed`, trust, CRC, Intuition).
+- `filterByTab` replaced by `filterByRubric` + audience filter.
 
-## Hors scope (v1)
+## Out of scope (v1)
 
-- Réactions au-delà tip/boost.
-- Persistance on-chain de la portée.
-- Fil « Following » séparé algorithmiquement.
+- Reactions beyond tip/boost.
+- On-chain audience persistence.
+- Separate algorithmic “Following” feed.
 
-## Fichiers impactés
+## Files impacted
 
 - `src/lib/types/index.ts`
-- `src/lib/posts/visibility.ts` (nouveau)
+- `src/lib/posts/visibility.ts`
 - `src/lib/ranking/feed-ranking.ts` + tests
 - `src/providers/trustbook-provider.tsx`
 - `src/components/feed/*`, `src/components/posts/*`

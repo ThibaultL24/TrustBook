@@ -12,11 +12,11 @@ const STYLES: Record<PostType, string> = {
 };
 
 const LABELS: Record<PostType, string> = {
-  thought: "Pensée",
+  thought: "Thought",
   recommendation: "Reco",
-  offer: "Offre",
-  need: "Besoin",
-  event: "Événement",
+  offer: "Offer",
+  need: "Need",
+  event: "Event",
 };
 
 export function PostTypeBadge({ type }: { type: PostType }) {
