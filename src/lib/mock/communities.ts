@@ -1,8 +1,30 @@
 // src/lib/mock/communities.ts
 
 import type { Community } from "@/lib/types";
+import { HIST_GROUP_ADDRESS } from "@/lib/circles/history-guessr-addresses";
+
+export const OPEN_FEED_COMMUNITY_ID = "open-feed";
+export const HISTORY_GUESSR_COMMUNITY_ID = "history-guessr";
 
 export const MOCK_COMMUNITIES: Community[] = [
+  {
+    id: OPEN_FEED_COMMUNITY_ID,
+    name: "Fil ouvert",
+    description:
+      "Publications libres sans communauté ciblée — visibles selon la portée choisie (cercle, découverte).",
+    avatarUrl: "https://placekitten.com/100/100",
+    memberCount: 999,
+    category: "other",
+  },
+  {
+    id: HISTORY_GUESSR_COMMUNITY_ID,
+    name: "History Guessr",
+    description:
+      "Groupe HIST sur Gnosis — même économie que le mini-app OpenCircles / History Guessr.",
+    avatarUrl: "https://placekitten.com/105/105",
+    memberCount: 42,
+    category: "education",
+  },
   {
     id: "circles-builders",
     name: "Circles Builders",

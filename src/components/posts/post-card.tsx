@@ -10,6 +10,7 @@ import { COMMUNITY_MAP } from "@/lib/mock/communities";
 import { Avatar } from "@/components/ui/avatar";
 import { ShareButton } from "@/components/ui/share-button";
 import { PostTypeBadge } from "./post-type-badge";
+import { PostAudienceBadge } from "./post-audience-badge";
 import { PostLiveBadge } from "./post-live-badge";
 import { TrustExplanation } from "./trust-explanation";
 import { PostComments } from "./post-comments";
@@ -27,7 +28,6 @@ import {
   HeartHandshake,
   MessageCircle,
   MoreHorizontal,
-  Globe,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -114,9 +114,8 @@ export function PostCard({ ranked, onTrustAuthor, compact }: PostCardProps) {
           </Link>
           <div className="flex flex-wrap items-center gap-1 text-xs text-slate-500">
             <span>{formatPostTime(post.createdAt)}</span>
-            <span>·</span>
-            <Globe className="h-3 w-3" />
-            {community && (
+            <PostAudienceBadge audience={post.audience} />
+            {community && community.id !== "open-feed" && (
               <>
                 <span>·</span>
                 <Link
@@ -156,6 +155,11 @@ export function PostCard({ ranked, onTrustAuthor, compact }: PostCardProps) {
 
       {/* Body */}
       <div className="px-3 pb-2 pt-2">
+        {post.type !== "thought" && post.title && post.title !== "…" && (
+          <h3 className="mb-1 text-[15px] font-bold text-slate-900">
+            {post.title}
+          </h3>
+        )}
         {post.id === DEMO_LIVE_TIP_POST_ID &&
           isLiveCirclesAuthor(post.authorAddress) && (
             <p className="mb-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-100">
@@ -172,9 +176,6 @@ export function PostCard({ ranked, onTrustAuthor, compact }: PostCardProps) {
           </p>
         )}
 
-        <h3 className="mb-1 text-[15px] font-semibold leading-snug text-slate-900">
-          {post.title}
-        </h3>
         {!compact && (
           <p className="text-sm leading-relaxed text-slate-700">{post.body}</p>
         )}

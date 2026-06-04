@@ -3,7 +3,7 @@
 import type {
   FeedExplanation,
   FeedScoreBreakdown,
-  FeedTab,
+  FeedRubric,
   Post,
   RankedPost,
   TrustEdge,
@@ -49,7 +49,8 @@ function postTypeBonus(type: Post["type"]): number {
       return WEIGHTS.typeOffer;
     case "event":
       return WEIGHTS.typeEvent;
-    default:
+    case "thought":
+    case "recommendation":
       return WEIGHTS.typeRecommendation;
   }
 }
@@ -277,25 +278,34 @@ export function rankFeed(
     });
 }
 
-export function filterByTab(
+export function filterByRubric(
   ranked: RankedPost[],
-  tab: FeedTab,
+  rubric: FeedRubric,
   viewerAddress?: string,
   edges?: TrustEdge[],
 ): RankedPost[] {
-  if (tab === "circle") {
+  if (rubric === "all") return ranked;
+
+  if (rubric === "circle") {
     if (!viewerAddress || !edges) return ranked;
-    return ranked.filter((r) =>
-      isInTrustCircle(viewerAddress, r.post.authorAddress, edges),
+    return ranked.filter(
+      (r) =>
+        r.post.authorAddress === viewerAddress ||
+        isInTrustCircle(viewerAddress, r.post.authorAddress, edges),
     );
   }
-  if (tab === "for-you") return ranked;
+
+  if (rubric === "thoughts") {
+    return ranked.filter((r) => r.post.type === "thought");
+  }
+
   const typeMap = {
     needs: "need",
     offers: "offer",
     recos: "recommendation",
     events: "event",
   } as const;
-  const targetType = typeMap[tab];
+  const targetType = typeMap[rubric as keyof typeof typeMap];
+  if (!targetType) return ranked;
   return ranked.filter((r) => r.post.type === targetType);
 }

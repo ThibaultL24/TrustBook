@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { FeedTab } from "@/lib/types";
+import type { FeedRubric } from "@/lib/types";
 import type { ComposerMode } from "@/lib/posts/composer-modes";
 import { useTrustbook } from "@/providers/trustbook-provider";
 import { useMockSession } from "@/providers/mock-session-provider";
@@ -20,7 +20,7 @@ import { JudgingBanner } from "@/components/layout/judging-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StoriesStrip } from "./stories-strip";
 import { PostComposer } from "./post-composer";
-import { FeedTabs } from "./feed-tabs";
+import { FeedRubricChips } from "./feed-rubric-chips";
 import { CommunityFilter } from "./community-filter";
 import { ShareStoryModal } from "./share-story-modal";
 import { StoryViewer } from "./story-viewer";
@@ -30,7 +30,7 @@ import { CreatePostModal } from "@/components/posts/create-post-modal";
 import { PostFocusModal } from "@/components/posts/post-focus-modal";
 import { ToastStack } from "@/components/ui/toast-stack";
 import { TrustCirclePanel } from "@/components/trust/trust-circle-panel";
-import { Inbox, Users } from "lucide-react";
+import { Inbox } from "lucide-react";
 
 function getInitialTourOpen(): boolean {
   if (typeof window === "undefined") return false;
@@ -42,7 +42,7 @@ export function FeedView() {
   const searchParams = useSearchParams();
   const { isGuest, usesLiveWallet } = useMockSession();
   const {
-    getRankedForTab,
+    getRankedFeed,
     communityFilter,
     setCommunityFilter,
     focusedPostId,
@@ -53,9 +53,12 @@ export function FeedView() {
     storyGroups,
   } = useTrustbook();
 
-  const [tab, setTab] = useState<FeedTab>("for-you");
+  const [rubric, setRubric] = useState<FeedRubric>("all");
   const [trustTarget, setTrustTarget] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [createVariant, setCreateVariant] = useState<"thought" | "utility">(
+    "thought",
+  );
   const [composerMode, setComposerMode] = useState<ComposerMode>("standard");
   const [showShareStory, setShowShareStory] = useState(false);
   const [activeStoryAuthor, setActiveStoryAuthor] = useState<string | null>(
@@ -74,8 +77,12 @@ export function FeedView() {
     ? storyGroups.find((g) => g.authorAddress === activeStoryAuthor)
     : null;
 
-  function openCreate(mode: ComposerMode = "standard") {
+  function openCreate(
+    mode: ComposerMode = "standard",
+    variant: "thought" | "utility" = "thought",
+  ) {
     setComposerMode(mode);
+    setCreateVariant(variant);
     setShowCreate(true);
   }
 
@@ -92,7 +99,7 @@ export function FeedView() {
 
     if (communityId) setCommunityFilter(communityId);
     if (postId) setFocusedPostId(postId);
-    if (create === "1") openCreate("standard");
+    if (create === "1") openCreate("standard", "thought");
 
     if (raw) {
       const parsed = parseDeepLinkDataSafe(raw);
@@ -114,10 +121,22 @@ export function FeedView() {
     return () => window.clearTimeout(timer);
   }, [focusedPostId, posts]);
 
-  const ranked = getRankedForTab(tab, communityFilter);
+  const ranked = getRankedFeed(rubric, communityFilter);
   const focusedPost = focusedPostId
     ? posts.find((p) => p.id === focusedPostId)
     : null;
+
+  const emptyTitle =
+    rubric === "circle"
+      ? "Aucune publication de votre cercle"
+      : rubric === "thoughts"
+        ? "Aucune pensée pour l’instant"
+        : "Rien à afficher ici";
+
+  const emptyDescription =
+    rubric === "circle"
+      ? "Faites confiance à plus d’auteurs sur Circles pour remplir ce filtre."
+      : "Changez de rubrique ou publiez avec la portée qui vous convient.";
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-24">
@@ -128,7 +147,7 @@ export function FeedView() {
         <div className="mx-auto max-w-lg px-3 py-2">
           <div className="flex flex-col gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-600">
-              Browsing as guest · connect to tip & trust on Gnosis
+              Navigation invité · connectez-vous pour tip & trust sur Gnosis
             </p>
             <ConnectWalletButton className="sm:max-w-[180px]" variant="outline" />
           </div>
@@ -138,7 +157,10 @@ export function FeedView() {
       {usesLiveWallet && (
         <div className="mx-auto max-w-lg px-3 pb-1">
           <p className="rounded-lg bg-emerald-600 px-3 py-1.5 text-center text-[11px] font-medium text-white">
-            Connected · {viewer.crcBalance ?? 0} CRC available
+            Connecté ·{" "}
+            {viewer.crcBalance != null
+              ? `${viewer.crcBalance} CRC disponibles`
+              : "chargement du solde CRC…"}
           </p>
         </div>
       )}
@@ -148,25 +170,25 @@ export function FeedView() {
           onOpenOwnStoryPicker={() => setShowShareStory(true)}
           onOpenStory={setActiveStoryAuthor}
         />
-        <PostComposer onOpenCreate={openCreate} />
+        <PostComposer
+          onOpenCreate={(mode) => openCreate(mode, "thought")}
+          onOpenUtility={() => openCreate("standard", "utility")}
+        />
         {(usesLiveWallet || isGuest) && (
           <div className="px-3 sm:px-0">
-            <TrustCirclePanel compact={tab !== "circle"} />
+            <TrustCirclePanel compact />
           </div>
         )}
       </div>
 
-      <FeedTabs active={tab} onChange={setTab} />
+      <div className="mx-auto max-w-lg border-b border-[var(--border)] bg-white px-3 py-2">
+        <h1 className="text-lg font-bold text-slate-900">Accueil</h1>
+        <p className="text-xs text-slate-500">
+          Publications classées par confiance · portée choisie par l’auteur
+        </p>
+      </div>
 
-      {tab === "circle" && (
-        <div className="mx-auto max-w-lg px-3 py-1">
-          <p className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-100">
-            <Users className="h-3.5 w-3.5 shrink-0" />
-            Posts from people in your trust circle — mutual trust, direct trust,
-            and shared paths.
-          </p>
-        </div>
-      )}
+      <FeedRubricChips active={rubric} onChange={setRubric} />
 
       <div className="mx-auto max-w-lg px-3 py-2">
         <CommunityFilter value={communityFilter} onChange={setCommunityFilter} />
@@ -184,12 +206,8 @@ export function FeedView() {
         {ranked.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={tab === "circle" ? "No posts from your circle yet" : "No posts here yet"}
-            description={
-              tab === "circle"
-                ? "Trust more authors on Circles to grow your circle feed."
-                : "Try another filter or create a post for your communities."
-            }
+            title={emptyTitle}
+            description={emptyDescription}
           />
         ) : (
           ranked.map((r) => (
@@ -213,6 +231,7 @@ export function FeedView() {
       {showCreate && (
         <CreatePostModal
           mode={composerMode}
+          variant={createVariant}
           onClose={() => setShowCreate(false)}
         />
       )}
@@ -242,7 +261,7 @@ export function FeedView() {
 
       <DemoTour key={tourKey} open={showTour} onClose={() => setShowTour(false)} />
       <ToastStack />
-      <BottomNav onCreateClick={() => openCreate("standard")} />
+      <BottomNav onCreateClick={() => openCreate("standard", "thought")} />
     </div>
   );
 }

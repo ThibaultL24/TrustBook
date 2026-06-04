@@ -1,7 +1,7 @@
 // src/lib/stories/helpers.ts
 
-import type { Post, Story, UserProfile } from "@/lib/types";
-import type { TrustEdge } from "@/lib/types";
+import type { Post, Story, UserProfile, TrustEdge } from "@/lib/types";
+import { canViewerSeePost } from "@/lib/posts/visibility";
 import {
   getTrustCirclePriority,
   isInTrustCircle,
@@ -56,8 +56,17 @@ export function buildStoryGroups(
   getUser: (address: string) => UserProfile | undefined,
   getPost: (postId: string) => Post | undefined,
   viewedStoryIds: Set<string>,
+  viewerGroups: string[] = [],
 ): StoryGroup[] {
-  const active = getActiveStories(stories);
+  const active = getActiveStories(stories).filter((story) => {
+    if (story.authorAddress === viewerAddress) return true;
+    if (!isInTrustCircle(viewerAddress, story.authorAddress, edges)) {
+      return false;
+    }
+    const post = getPost(story.postId);
+    if (!post) return true;
+    return canViewerSeePost(viewerAddress, post, viewerGroups, edges);
+  });
   const byAuthor = new Map<string, Story[]>();
 
   for (const story of active) {

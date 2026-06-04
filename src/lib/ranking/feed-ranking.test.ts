@@ -10,6 +10,7 @@ const basePost: Post = {
   id: "test-post",
   authorAddress: MOCK_ADDRESSES.bob,
   communityId: "circles-builders",
+  audience: "discovery",
   type: "need",
   title: "Test",
   body: "Body text for ranking test",

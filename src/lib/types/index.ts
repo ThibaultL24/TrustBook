@@ -1,6 +1,13 @@
 // src/lib/types/index.ts
 
-export type PostType = "recommendation" | "offer" | "need" | "event";
+export type PostType =
+  | "thought"
+  | "recommendation"
+  | "offer"
+  | "need"
+  | "event";
+
+export type PostAudience = "circle" | "communities" | "discovery";
 
 export type PostFormat = "standard" | "live" | "photo" | "mood";
 
@@ -41,6 +48,7 @@ export interface Post {
   id: string;
   authorAddress: string;
   communityId: string;
+  audience: PostAudience;
   type: PostType;
   title: string;
   body: string;
@@ -80,7 +88,14 @@ export interface RankedPost {
   scoreBreakdown: FeedScoreBreakdown;
 }
 
-export type FeedTab = "for-you" | "circle" | "needs" | "offers" | "recos" | "events";
+export type FeedRubric =
+  | "all"
+  | "thoughts"
+  | "needs"
+  | "offers"
+  | "recos"
+  | "events"
+  | "circle";
 
 export interface TrustEdge {
   from: string;

@@ -30,7 +30,12 @@ const BASE_USERS: BaseUser[] = [
     bio: "Community organizer exploring Circles-native discovery.",
     trustScore: 82,
     trustLevel: "Established",
-    groups: ["circles-builders", "mutual-aid", "local-makers"],
+    groups: [
+      "circles-builders",
+      "mutual-aid",
+      "local-makers",
+      "history-guessr",
+    ],
     crcBalance: 240,
   },
   {

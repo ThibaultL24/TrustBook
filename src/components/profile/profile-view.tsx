@@ -8,6 +8,7 @@ import { applyProfileMediaToUser } from "@/lib/profile/profile-media-store";
 import { PostCard } from "@/components/posts/post-card";
 import { TrustConfirmModal } from "@/components/trust/trust-confirm-modal";
 import { rankPost } from "@/lib/ranking/feed-ranking";
+import { canViewerSeePost } from "@/lib/posts/visibility";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProfileCoverHeader } from "./profile-cover-header";
@@ -44,9 +45,13 @@ export function ProfileView({ profile: profileProp }: ProfileViewProps) {
   const [trustOpen, setTrustOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  const authorPosts = getPostsByAuthor(profile.address);
   const isOwnProfile =
     profile.address.toLowerCase() === viewer.address.toLowerCase();
+  const authorPosts = getPostsByAuthor(profile.address).filter(
+    (post) =>
+      isOwnProfile ||
+      canViewerSeePost(viewer.address, post, viewer.groups, trustEdges),
+  );
   const trustPending = isActionPending(`trust:${profile.address}`);
 
   return (

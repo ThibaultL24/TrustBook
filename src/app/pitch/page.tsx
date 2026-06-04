@@ -4,7 +4,10 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { resetDemoTour } from "@/components/demo/demo-tour";
-import { DEMO_LIVE_TIP_POST_ID } from "@/lib/circles/live-authors";
+import {
+  DEMO_LIVE_TIP_POST_ID,
+  DEMO_CIRCLES_PROFILE_PATH,
+} from "@/lib/circles/live-authors";
 import {
   ArrowRight,
   Coins,
@@ -54,7 +57,11 @@ export default function PitchPage() {
               <span className="font-semibold">Live CRC</span> badge
             </li>
             <li>
-              Tap <strong>Tip 1 CRC (live)</strong> — on-chain transfer with{" "}
+              Tap <strong>Tip 1 CRC (live)</strong> on Lenormand&apos;s Safe (
+              <Link href={DEMO_CIRCLES_PROFILE_PATH} className="underline">
+                History Guessr
+              </Link>
+              ) —{" "}
               <code className="rounded bg-white/80 px-1 text-[10px]">
                 trustbook:tip:{DEMO_LIVE_TIP_POST_ID}
               </code>

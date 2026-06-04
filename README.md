@@ -81,7 +81,15 @@ Patterns ported from [OpenCircles](/root/OpenCircles) (History Guessr): `@aboutc
 5. Tips/boosts use `transfer.advanced` with annotated `txData` (`trustbook:tip:{postId}` / `trustbook:boost:{postId}`)
 6. Trust uses `avatar.trust.add` on-chain
 
-Demo feed posts still use mock author addresses — tipping those authors will show a clear message. Use `/profile/{circlesAvatarAddress}` for real recipients or extend the feed with on-chain profiles.
+Live demo posts use **History Guessr** Circles addresses (same as OpenCircles):
+
+| Rôle | Adresse |
+|------|---------|
+| Safe Lenormand (CRC, tips live) | `0xD55a912aF5639a6769AE5c1894C0c7BFB5Bf539E` |
+| Groupe HIST | `0x5AC1C8b6c9BCB8D1a8Ef4fa5484738877EfA763E` |
+| Gnosis Group | `0xc19bc204eb1c1d5b3fe500e5e5dfabab625f286c` |
+
+Profile: `/profile/0xD55a912aF5639a6769AE5c1894C0c7BFB5Bf539E` — tip the post **« Tip live — Safe Lenormand »** on `/feed` after connecting the same wallet on Gnosis. Mock-only authors still show a clear error if you tip fictional addresses.
 
 ## Hackathon demo script
 

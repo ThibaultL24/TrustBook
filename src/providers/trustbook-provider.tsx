@@ -47,7 +47,8 @@ import {
   demoAvatarForAddress,
   demoCoverForAddress,
 } from "@/lib/mock/demo-media";
-import { rankFeed, filterByTab } from "@/lib/ranking/feed-ranking";
+import { rankFeed, filterByRubric } from "@/lib/ranking/feed-ranking";
+import { canViewerSeePost, audienceAllowsStoryShare, resolveCommunityId } from "@/lib/posts/visibility";
 import { buildSeedStories, buildStoryGroups, storyExpiresAt } from "@/lib/stories/helpers";
 import type { StoryGroup } from "@/lib/stories/helpers";
 import { getTrustCircleAddresses } from "@/lib/trust/trust-circle";
@@ -60,8 +61,9 @@ import {
   type ProfileMedia,
 } from "@/lib/profile/profile-media-store";
 import type {
-  FeedTab,
+  FeedRubric,
   Post,
+  PostAudience,
   PostFormat,
   PostType,
   RankedPost,
@@ -82,7 +84,8 @@ interface Toast {
 
 interface CreatePostInput {
   type: PostType;
-  communityId: string;
+  audience: PostAudience;
+  communityId?: string;
   title: string;
   body: string;
   amountRequested?: number;
@@ -103,7 +106,7 @@ interface TrustbookContextValue {
   rankedFeed: RankedPost[];
   integrationMode: TrustbookMode;
   canSignActions: boolean;
-  getRankedForTab: (tab: FeedTab, communityId?: string | null) => RankedPost[];
+  getRankedFeed: (rubric: FeedRubric, communityId?: string | null) => RankedPost[];
   getUser: (address: string) => UserProfile | undefined;
   getPostsByAuthor: (address: string) => Post[];
   getPostsByCommunity: (communityId: string) => Post[];
@@ -326,15 +329,14 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     void (async () => {
-      const adapter = getCirclesAdapter();
-      const profile = await adapter.getProfile(circlesAvatarAddress);
+      const profile = await fetchCirclesProfile(circlesAvatarAddress);
       if (cancelled || !profile) return;
       setWalletViewer({
         address: profile.address,
         displayName: profile.displayName ?? "You",
         avatarUrl: profile.avatarUrl ?? "",
         bio: profile.bio ?? "",
-        crcBalance: profile.crcBalance ?? 0,
+        crcBalance: profile.crcBalance,
         groups: [],
         trustedByViewer: false,
         trustsViewer: false,
@@ -477,18 +479,30 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     [posts],
   );
 
-  const rankedFeed = useMemo(
-    () =>
-      rankFeed(posts, viewerAddress, viewer.groups, getUser, trustEdges),
-    [posts, viewerAddress, viewer.groups, getUser, trustEdges],
-  );
+  const rankedFeed = useMemo(() => {
+    const visible = posts.filter((p) =>
+      canViewerSeePost(viewerAddress, p, viewer.groups, trustEdges),
+    );
+    return rankFeed(
+      visible,
+      viewerAddress,
+      viewer.groups,
+      getUser,
+      trustEdges,
+    );
+  }, [posts, viewerAddress, viewer.groups, getUser, trustEdges]);
 
-  const getRankedForTab = useCallback(
-    (tab: FeedTab, communityId?: string | null) => {
-      let filtered = filterByTab(rankedFeed, tab, viewerAddress, trustEdges);
+  const getRankedFeed = useCallback(
+    (rubric: FeedRubric, communityId?: string | null) => {
+      let ranked = filterByRubric(
+        rankedFeed,
+        rubric,
+        viewerAddress,
+        trustEdges,
+      );
       const cid = communityId ?? communityFilter;
-      if (cid) filtered = filtered.filter((r) => r.post.communityId === cid);
-      return filtered;
+      if (cid) ranked = ranked.filter((r) => r.post.communityId === cid);
+      return ranked;
     },
     [rankedFeed, communityFilter, viewerAddress, trustEdges],
   );
@@ -507,8 +521,17 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
         getUser,
         getPostById,
         viewedStoryIds,
+        viewer.groups,
       ),
-    [stories, viewerAddress, trustEdges, getUser, getPostById, viewedStoryIds],
+    [
+      stories,
+      viewerAddress,
+      viewer.groups,
+      trustEdges,
+      getUser,
+      getPostById,
+      viewedStoryIds,
+    ],
   );
 
   const updatePost = useCallback((postId: string, patch: Partial<Post>) => {
@@ -537,8 +560,12 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       const post = posts.find((p) => p.id === postId);
       if (!post) return;
 
-      if (canSignActions && (viewer.crcBalance ?? 0) < 1) {
-        showActionToast("Insufficient CRC balance", "info");
+      if (
+        canSignActions &&
+        viewer.crcBalance != null &&
+        viewer.crcBalance < 1
+      ) {
+        showActionToast("Solde CRC insuffisant", "info");
         return;
       }
 
@@ -590,8 +617,12 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       const post = posts.find((p) => p.id === postId);
       if (!post) return;
 
-      if (canSignActions && (viewer.crcBalance ?? 0) < amount) {
-        showActionToast("Insufficient CRC for boost", "info");
+      if (
+        canSignActions &&
+        viewer.crcBalance != null &&
+        viewer.crcBalance < amount
+      ) {
+        showActionToast("Solde CRC insuffisant pour le boost", "info");
         return;
       }
 
@@ -678,10 +709,17 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
   const createPost = useCallback(
     (input: CreatePostInput): Post => {
       const format = input.format ?? "standard";
+      const audience = input.audience;
+      const communityId = resolveCommunityId(
+        audience,
+        input.communityId,
+        viewer.groups,
+      );
       const post: Post = {
         id: `post-${crypto.randomUUID().slice(0, 8)}`,
         authorAddress: viewer.address,
-        communityId: input.communityId,
+        communityId,
+        audience,
         type: input.type,
         title: input.title.trim(),
         body: input.body.trim(),
@@ -697,7 +735,7 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
       };
       setPosts((prev) => [post, ...prev]);
 
-      if (input.shareToStory) {
+      if (input.shareToStory && audienceAllowsStoryShare(audience)) {
         const createdAt = post.createdAt;
         setStories((prev) => [
           ...prev,
@@ -711,14 +749,20 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
         ]);
       }
 
+      const audienceToast: Record<PostAudience, string> = {
+        circle: "Publié pour votre cercle de confiance",
+        communities: "Publié pour vos communautés",
+        discovery: "Publié en découverte",
+      };
+
       showActionToast(
         input.isLive
-          ? "You are live — your trust circle was notified"
-          : "Post published to your communities",
+          ? "Vous êtes en direct — votre cercle a été notifié"
+          : audienceToast[audience],
       );
       return post;
     },
-    [viewer.address, showActionToast],
+    [viewer.address, viewer.groups, showActionToast],
   );
 
   const sharePostToStory = useCallback(
@@ -819,7 +863,7 @@ export function TrustbookProvider({ children }: { children: ReactNode }) {
     rankedFeed,
     integrationMode: TRUSTBOOK_MODE,
     canSignActions,
-    getRankedForTab,
+    getRankedFeed,
     getUser,
     getPostsByAuthor,
     getPostsByCommunity,

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface PostComposerProps {
   onOpenCreate: (mode?: ComposerMode) => void;
+  onOpenUtility: () => void;
 }
 
 const ACTIONS: {
@@ -19,11 +20,12 @@ const ACTIONS: {
 }[] = [
   { mode: "live", icon: Video, label: "Live", color: "text-rose-600" },
   { mode: "photo", icon: ImageIcon, label: "Photo", color: "text-emerald-600" },
-  { mode: "mood", icon: Smile, label: "Feeling", color: "text-amber-500" },
+  { mode: "mood", icon: Smile, label: "Humeur", color: "text-amber-500" },
 ];
 
-export function PostComposer({ onOpenCreate }: PostComposerProps) {
+export function PostComposer({ onOpenCreate, onOpenUtility }: PostComposerProps) {
   const { viewer } = useTrustbook();
+  const firstName = viewer.displayName.split(" ")[0];
 
   return (
     <div className="card-surface mx-auto max-w-lg rounded-none border-x-0 px-3 py-3 sm:rounded-xl sm:border-x">
@@ -34,7 +36,7 @@ export function PostComposer({ onOpenCreate }: PostComposerProps) {
           onClick={() => onOpenCreate("standard")}
           className="flex-1 rounded-full bg-[var(--surface-muted)] px-4 py-2.5 text-left text-sm text-slate-500 ring-1 ring-[var(--border)] transition hover:bg-white"
         >
-          What&apos;s on your mind, {viewer.displayName.split(" ")[0]}?
+          Qu’avez-vous en tête, {firstName} ?
         </button>
       </div>
       <div className="divider-fb my-2.5" />
@@ -51,6 +53,13 @@ export function PostComposer({ onOpenCreate }: PostComposerProps) {
           </button>
         ))}
       </div>
+      <button
+        type="button"
+        onClick={onOpenUtility}
+        className="mt-2 w-full text-center text-[11px] font-medium text-emerald-700 hover:underline"
+      >
+        Publier une annonce (besoin, offre, événement…)
+      </button>
     </div>
   );
 }
